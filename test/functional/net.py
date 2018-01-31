@@ -20,11 +20,24 @@ from test_framework.util import (
 class NetTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
+
+        #扩展参数
+        #self.extra_args = []
+
+
+        #单元测试必须添加参数 两个节点
         self.num_nodes = 2
 
     def run_test(self):
+
+        #测试连接
+
+        #测试连接数量
         self._test_connection_count()
+
+
         self._test_getnettotals()
+        self._test_getnetworkingCustominfo()
         self._test_getnetworkinginfo()
         self._test_getaddednodeinfo()
         self._test_getpeerinfo()
@@ -50,11 +63,42 @@ class NetTest(BitcoinTestFramework):
         time.sleep(0.1)
         peer_info_after_ping = self.nodes[0].getpeerinfo()
         net_totals_after_ping = self.nodes[0].getnettotals()
+
+
+        #为啥这里用zip
         for before, after in zip(peer_info, peer_info_after_ping):
             assert_equal(before['bytesrecv_per_msg']['pong'] + 32, after['bytesrecv_per_msg']['pong'])
             assert_equal(before['bytessent_per_msg']['ping'] + 32, after['bytessent_per_msg']['ping'])
+
+            
         assert_equal(net_totals['totalbytesrecv'] + 32*2, net_totals_after_ping['totalbytesrecv'])
         assert_equal(net_totals['totalbytessent'] + 32*2, net_totals_after_ping['totalbytessent'])
+
+    def _test_getnetworkingCustominfo(self):
+
+        assert_equal(self.nodes[0].getnetworkCustominfo()['networkactive'], True)
+        assert_equal(self.nodes[0].getnetworkCustominfo()['connections'], 2)
+
+        self.nodes[0].setnetworkactive(False)
+
+        networkCustominfo = self.nodes[0].getnetworkCustominfo()
+
+        assert_equal(self.nodes[0].getnetworkCustominfo()['networkactive'], False)
+        timeout = 3
+        while self.nodes[0].getnetworkCustominfo()['connections'] != 0:
+            # Wait a bit for all sockets to close
+            assert timeout > 0, 'not all connections closed in time'
+            timeout -= 0.1
+            time.sleep(0.1)
+
+        self.nodes[0].setnetworkactive(True)
+        connect_nodes_bi(self.nodes, 0, 1)
+
+        afterNetworkCustominfo = self.nodes[0].getnetworkCustominfo()
+
+        assert_equal(self.nodes[0].getnetworkCustominfo()['networkactive'], True)
+        assert_equal(self.nodes[0].getnetworkCustominfo()['connections'], 2)
+
 
     def _test_getnetworkinginfo(self):
         assert_equal(self.nodes[0].getnetworkinfo()['networkactive'], True)
@@ -75,6 +119,7 @@ class NetTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getnetworkinfo()['connections'], 2)
 
     def _test_getaddednodeinfo(self):
+        # 判断getaddednodeinfo是否能够返回已添加节点信息
         assert_equal(self.nodes[0].getaddednodeinfo(), [])
         # add a node (node2) to node0
         ip_port = "127.0.0.1:{}".format(p2p_port(2))
@@ -91,6 +136,8 @@ class NetTest(BitcoinTestFramework):
         peer_info = [x.getpeerinfo() for x in self.nodes]
         # check both sides of bidirectional connection between nodes
         # the address bound to on one side will be the source address for the other node
+
+        # node0的bindport与node2的address是一致的
         assert_equal(peer_info[0][0]['addrbind'], peer_info[1][0]['addr'])
         assert_equal(peer_info[1][0]['addrbind'], peer_info[0][0]['addr'])
 

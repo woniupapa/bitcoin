@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "*.lua.txt": "lua",
+        "__locale": "cpp",
+        "__split_buffer": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "*.ipp": "cpp",
+        "locale": "cpp",
+        "istream": "cpp",
+        "map": "cpp"
+    }
+}

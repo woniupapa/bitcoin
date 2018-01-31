@@ -94,12 +94,20 @@ class BitcoinTestFramework():
                           help="Attach a python debugger if test fails")
         parser.add_option("--usecli", dest="usecli", default=False, action="store_true",
                           help="use bitcoin-cli instead of RPC for all commands")
+
+        #添加参数解析器配置        
         self.add_options(parser)
         (self.options, self.args) = parser.parse_args()
 
         PortSeed.n = self.options.port_seed
 
-        os.environ['PATH'] = self.options.srcdir + ":" + self.options.srcdir + "/qt:" + os.environ['PATH']
+        #self.log = logging.getLogger('TestFramework')
+        #self.log.setLevel(logging.DEBUG)
+
+        #self.log.info("Initializing test directory2 " + self.options.srcdir)
+
+        os.environ['PATH'] = self.options.srcdir + ":" + self.options.srcdir + "/qt:" + "/usr/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/work/tools/apache-maven-3.3.9/bin:/Users/gleenxu/Library/Android/sdk/platform-tools:/Users/gleenxu/Library/Android/sdk/tools:/Users/gleenxu/GoLang/bin:/usr/local/Cellar/go/1.9.2/libexec/bin:/Users/gleenxu/GoLang/libdir/bin:/work/tools/apache-maven-3.3.9/bin:/Users/gleenxu/Library/Android/sdk/platform-tools:/Users/gleenxu/Library/Android/sdk/tools:/Users/gleenxu/GoLang/bin:/usr/local/Cellar/go/1.9.2/libexec/bin:/Users/gleenxu/GoLang/libdir/bin:/Users/gleenxu/GoLang/bin"#os.environ['PATH']
+        os.environ['python3'] = "/usr/local/bin/python3"
 
         check_json_precision()
 

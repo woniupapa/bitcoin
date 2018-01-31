@@ -410,9 +410,11 @@ class TestHandler:
             test_argv = t.split()
             testdir = "{}/{}_{}".format(self.tmpdir, re.sub(".py$", "", test_argv[0]), portseed)
             tmpdir_arg = ["--tmpdir={}".format(testdir)]
+
+            testCommandArgs = [self.tests_dir + test_argv[0]] + test_argv[1:] + self.flags + portseed_arg + tmpdir_arg
             self.jobs.append((t,
                               time.time(),
-                              subprocess.Popen([self.tests_dir + test_argv[0]] + test_argv[1:] + self.flags + portseed_arg + tmpdir_arg,
+                              subprocess.Popen(testCommandArgs,
                                                universal_newlines=True,
                                                stdout=log_stdout,
                                                stderr=log_stderr),

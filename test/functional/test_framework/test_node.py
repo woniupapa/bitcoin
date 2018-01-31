@@ -59,6 +59,18 @@ class TestNode():
         self.coverage_dir = coverage_dir
         # Most callers will just need to add extra args to the standard list below. For those callers that need more flexibity, they can just set the args property directly.
         self.extra_args = extra_args
+
+        #-datadir=<目录名>  指定数据目录
+        #-server    
+        #-keypool  秘钥池尺寸
+        #-discover
+        #-rest  
+        #-logtimemicros
+        #-debug
+        #-debugexclude  libevent leveldb
+        #-mocktime
+        #-uacomment
+
         self.args = [self.binary, "-datadir=" + self.datadir, "-server", "-keypool=1", "-discover=0", "-rest", "-logtimemicros", "-debug", "-debugexclude=libevent", "-debugexclude=leveldb", "-mocktime=" + str(mocktime), "-uacomment=testnode%d" % i]
 
         self.cli = TestNodeCLI(os.getenv("BITCOINCLI", "bitcoin-cli"), self.datadir)
