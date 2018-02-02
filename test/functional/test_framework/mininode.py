@@ -153,13 +153,23 @@ class P2PConnection(asyncore.dispatcher):
                 if len(self.recvbuf) < 4 + 12 + 4 + 4:
                     return
 
-                #分割出命令
+                #分割出命令 从4开始获取12个字段 获得命令
                 command = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
+                
+                #消息长度 4+12:4+12+4 从4+12开始位置再获取4个字节:消息长度
                 msglen = struct.unpack("<i", self.recvbuf[4+12:4+12+4])[0]
+
+                #校验位 4+12+4:4+12+4+4 从4+12+4开始位置再获取4个字节:校验位
                 checksum = self.recvbuf[4+12+4:4+12+4+4]
+
                 if len(self.recvbuf) < 4 + 12 + 4 + 4 + msglen:
                     return
+
+                #消息体内容 4+12+4+4:4+12+4+4+msglen 从4(magic)+12(command)+4(msglegth)+4(checksum)位置
+                #开始取得msglen长度的消息内容
                 msg = self.recvbuf[4+12+4+4:4+12+4+4+msglen]
+
+                #校验内容sha256(sha256(msg)) 两次sha256
                 th = sha256(msg)
                 h = sha256(th)
                 if checksum != h[:4]:
@@ -176,6 +186,11 @@ class P2PConnection(asyncore.dispatcher):
 
                 #将服务器数据序列化到消息对象
                 t.deserialize(f)
+
+                #############################################
+                #测试协议
+                if command == b'addr':
+                    testAddr = 0
 
                 #保存日志
                 self._log_message("receive", t)
@@ -393,6 +408,7 @@ class P2PInterface(P2PConnection):
 
     # Message sending helper functions
 
+    #发送消息并且同步ping请求
     def send_and_ping(self, message):
         self.send_message(message)
         self.sync_with_ping()

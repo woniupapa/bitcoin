@@ -847,18 +847,25 @@ class msg_version():
         self.nRelay = MY_RELAY
 
     def deserialize(self, f):
+        #节点使用的协议版本标识 数据类型:int32_t 4个字节主要是<i
         self.nVersion = struct.unpack("<i", f.read(4))[0]
         if self.nVersion == 10300:
             self.nVersion = 300
+        #该连接允许的特性(bitfield) 数据类型:uint64_t 8个字节 无符号数<Q
         self.nServices = struct.unpack("<Q", f.read(8))[0]
+        #以秒计算的标准UNIX时间戳 数据类型:int64_t 8个字节 有符号数<q
         self.nTime = struct.unpack("<q", f.read(8))[0]
+        #生成此消息的节点的网络地址 数据类型CAdd 26字节
         self.addrTo = CAddress()
         self.addrTo.deserialize(f)
 
         if self.nVersion >= 106:
+            #接受此消息的节点的网络地址 数据类型CAdd 26字节
             self.addrFrom = CAddress()
             self.addrFrom.deserialize(f)
+            #节点的随机id，用于侦测这个连接 数据类型:uint64_t 8个字节 无符号数<Q
             self.nNonce = struct.unpack("<Q", f.read(8))[0]
+            
             self.strSubVer = deser_string(f)
         else:
             self.addrFrom = None

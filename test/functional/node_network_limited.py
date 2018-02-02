@@ -34,6 +34,7 @@ class NodeNetworkLimitedTest(BitcoinTestFramework):
         NetworkThread().start()
         node.wait_for_verack()
 
+        #异常网络服务？节点类型: NODE_NETWORK NODE_BLOOM NODE_WITNESS NODE_NETWORK_LIMITED
         expected_services = NODE_BLOOM | NODE_WITNESS | NODE_NETWORK_LIMITED
 
         self.log.info("Check that node has signalled expected services.")
