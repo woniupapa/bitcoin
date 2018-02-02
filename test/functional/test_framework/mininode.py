@@ -49,6 +49,7 @@ MESSAGEMAP = {
     b"version": msg_version,
 }
 
+#网络类型
 MAGIC_BYTES = {
     "mainnet": b"\xf9\xbe\xb4\xd9",   # mainnet
     "testnet3": b"\x0b\x11\x09\x07",  # testnet3
@@ -83,6 +84,8 @@ class P2PConnection(asyncore.dispatcher):
         self.sendbuf = b""
         self.recvbuf = b""
         self.state = "connecting"
+
+        # 网络类型
         self.network = net
         self.disconnect = False
 
@@ -149,6 +152,8 @@ class P2PConnection(asyncore.dispatcher):
                     raise ValueError("got garbage %s" % repr(self.recvbuf))
                 if len(self.recvbuf) < 4 + 12 + 4 + 4:
                     return
+
+                #分割出命令
                 command = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
                 msglen = struct.unpack("<i", self.recvbuf[4+12:4+12+4])[0]
                 checksum = self.recvbuf[4+12+4:4+12+4+4]
@@ -162,10 +167,20 @@ class P2PConnection(asyncore.dispatcher):
                 self.recvbuf = self.recvbuf[4+12+4+4+msglen:]
                 if command not in MESSAGEMAP:
                     raise ValueError("Received unknown command from %s:%d: '%s' %s" % (self.dstaddr, self.dstport, command, repr(msg)))
+                
+                #接受数据，并且根据命令获取的相应message map
                 f = BytesIO(msg)
+
+                #找到command对应的消息对象
                 t = MESSAGEMAP[command]()
+
+                #将服务器数据序列化到消息对象
                 t.deserialize(f)
+
+                #保存日志
                 self._log_message("receive", t)
+
+                #发送消息
                 self.on_message(t)
         except Exception as e:
             logger.exception('Error reading message:', repr(e))

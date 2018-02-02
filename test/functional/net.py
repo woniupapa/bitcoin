@@ -35,9 +35,8 @@ class NetTest(BitcoinTestFramework):
         #测试连接数量
         self._test_connection_count()
 
-
         self._test_getnettotals()
-        self._test_getnetworkingCustominfo()
+        #self._test_getnetworkingCustominfo()
         self._test_getnetworkinginfo()
         self._test_getaddednodeinfo()
         self._test_getpeerinfo()
@@ -70,7 +69,7 @@ class NetTest(BitcoinTestFramework):
             assert_equal(before['bytesrecv_per_msg']['pong'] + 32, after['bytesrecv_per_msg']['pong'])
             assert_equal(before['bytessent_per_msg']['ping'] + 32, after['bytessent_per_msg']['ping'])
 
-            
+
         assert_equal(net_totals['totalbytesrecv'] + 32*2, net_totals_after_ping['totalbytesrecv'])
         assert_equal(net_totals['totalbytessent'] + 32*2, net_totals_after_ping['totalbytessent'])
 
@@ -105,6 +104,9 @@ class NetTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getnetworkinfo()['connections'], 2)
 
         self.nodes[0].setnetworkactive(False)
+
+        networkCustominfo = self.nodes[0].getnetworkinfo()
+
         assert_equal(self.nodes[0].getnetworkinfo()['networkactive'], False)
         timeout = 3
         while self.nodes[0].getnetworkinfo()['connections'] != 0:
@@ -113,8 +115,14 @@ class NetTest(BitcoinTestFramework):
             timeout -= 0.1
             time.sleep(0.1)
 
+        #激活网络
         self.nodes[0].setnetworkactive(True)
+
+        networkCustominfo = self.nodes[0].getnetworkinfo()
+
+        #两个节点互联
         connect_nodes_bi(self.nodes, 0, 1)
+
         assert_equal(self.nodes[0].getnetworkinfo()['networkactive'], True)
         assert_equal(self.nodes[0].getnetworkinfo()['connections'], 2)
 
@@ -123,11 +131,18 @@ class NetTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getaddednodeinfo(), [])
         # add a node (node2) to node0
         ip_port = "127.0.0.1:{}".format(p2p_port(2))
+
+        added_nodes = self.nodes[0].getaddednodeinfo(ip_port)
+
+        #添加节点 使用add命令
         self.nodes[0].addnode(ip_port, 'add')
+
         # check that the node has indeed been added
+        # 带参数的如何传递呢
         added_nodes = self.nodes[0].getaddednodeinfo(ip_port)
         assert_equal(len(added_nodes), 1)
         assert_equal(added_nodes[0]['addednode'], ip_port)
+
         # check that a non-existent node returns an error
         assert_raises_rpc_error(-24, "Node has not been added",
                               self.nodes[0].getaddednodeinfo, '1.1.1.1')

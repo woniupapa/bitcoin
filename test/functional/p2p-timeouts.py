@@ -38,6 +38,8 @@ class TimeoutsTest(BitcoinTestFramework):
         self.num_nodes = 1
 
     def run_test(self):
+
+        
         # Setup the p2p connections and start up the network thread.
         no_verack_node = self.nodes[0].add_p2p_connection(TestNode())
         no_version_node = self.nodes[0].add_p2p_connection(TestNode(), send_version=False)
@@ -47,12 +49,18 @@ class TimeoutsTest(BitcoinTestFramework):
 
         sleep(1)
 
+        peer_info = self.nodes[0].getpeerinfo()
+        net_totals = self.nodes[0].getnettotals()
+
         assert no_verack_node.connected
         assert no_version_node.connected
         assert no_send_node.connected
 
         no_verack_node.send_message(msg_ping())
         no_version_node.send_message(msg_ping())
+
+        afterPeer_info = self.nodes[0].getpeerinfo()
+        afterNet_totals = self.nodes[0].getnettotals()
 
         sleep(30)
 
@@ -64,6 +72,9 @@ class TimeoutsTest(BitcoinTestFramework):
 
         no_verack_node.send_message(msg_ping())
         no_version_node.send_message(msg_ping())
+
+        afterPeer1_info = self.nodes[0].getpeerinfo()
+        afterNet1_totals = self.nodes[0].getnettotals()
 
         sleep(31)
 

@@ -19,9 +19,12 @@ class P2PMempoolTests(BitcoinTestFramework):
         self.extra_args = [["-peerbloomfilters=0"]]
 
     def run_test(self):
+
         # Add a p2p connection
         self.nodes[0].add_p2p_connection(P2PInterface())
         network_thread_start()
+        
+        #等待P2PInterface()节点发送version 然后nodes[0]发送
         self.nodes[0].p2p.wait_for_verack()
 
         #request mempool

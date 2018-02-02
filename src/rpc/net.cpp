@@ -216,6 +216,7 @@ UniValue addnode(const JSONRPCRequest& request)
 
     std::string strNode = request.params[0].get_str();
 
+    // ontry
     if (strCommand == "onetry")
     {
         CAddress addr;
@@ -223,6 +224,7 @@ UniValue addnode(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
+    // add
     if (strCommand == "add")
     {
         if(!g_connman->AddNode(strNode))
