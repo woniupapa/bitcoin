@@ -162,10 +162,14 @@ enum BlockStatus: uint32_t {
     BLOCK_OPT_WITNESS       =   128, //!< block data in blk*.data was received with a witness-enforcing client
 };
 
-/** The block chain is a tree shaped structure starting with the
+/** 
+ * The block chain is a tree shaped structure starting with the
  * genesis block at the root, with each block potentially having multiple
  * candidates to be the next block. A blockindex may have multiple pprev pointing
  * to it, but at most one of them can be part of the currently active branch.
+ * 区块链是一个树形结构 从创世块在根上,每个潜在块有多个条件变成下个区块,区块索引可能有多个指向它的，
+ * 但是他们中的一个才能变成激活的分支
+ * 
  */
 class CBlockIndex
 {

@@ -10,6 +10,8 @@
         "*.ipp": "cpp",
         "locale": "cpp",
         "istream": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "iterator": "cpp",
+        "random": "cpp"
     }
 }
