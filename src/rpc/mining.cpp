@@ -143,9 +143,13 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
         if (!ProcessNewBlock(Params(), shared_pblock, true, nullptr))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
+
+        // 保存pblock的hash生成hex格式
         blockHashes.push_back(pblock->GetHash().GetHex());
 
-        //mark script as important because it was used at least for one coinbase output if the script came from the wallet
+        //mark script as important because it was used at least for one coinbase output 
+        //if the script came from the wallet
+        //生成脚本因为block最少有一个coinbase输出，如果脚本来自wallet
         if (keepScript)
         {
             coinbaseScript->KeepScript();
