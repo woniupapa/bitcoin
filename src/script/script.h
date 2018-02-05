@@ -385,7 +385,12 @@ private:
  */
 typedef prevector<28, unsigned char> CScriptBase;
 
-/** Serialized script, used inside transaction inputs and outputs */
+/** 
+ * Serialized script, used inside transaction inputs and outputs 
+ * 序列化脚本，被用在内部交易输入和输出。
+ * 就是交易的脚本语言，用来验证交易输入和输出
+ * 
+ * */
 class CScript : public CScriptBase
 {
 protected:
