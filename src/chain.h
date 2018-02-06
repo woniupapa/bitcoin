@@ -175,6 +175,7 @@ class CBlockIndex
 {
 public:
     //! pointer to the hash of the block, if any. Memory is owned by this CBlockIndex
+    // 指针指向block的hash,内存空间被CBlockIndex所拥有
     const uint256* phashBlock;
 
     //! pointer to the index of the predecessor of this block

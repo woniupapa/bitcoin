@@ -183,7 +183,10 @@ private:
     bool ConnectTip(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool);
 
     CBlockIndex* AddToBlockIndex(const CBlockHeader& block);
+
+
     /** Create a new block index entry for a given block hash */
+    /** 建立新的区块索引enter为给定的区块hash */
     CBlockIndex * InsertBlockIndex(const uint256& hash);
     void CheckBlockIndex(const Consensus::Params& consensusParams);
 
@@ -1677,6 +1680,12 @@ void ThreadScriptCheck() {
 // Protected by cs_main
 VersionBitsCache versionbitscache;
 
+/**
+ * 计算区块版本
+ * @param pindexPrev
+ * @param params
+ * 
+ * */
 int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
@@ -2134,7 +2143,11 @@ static void DoWarning(const std::string& strWarning)
     }
 }
 
-/** Check warning conditions and do some notifications on new chain tip set. */
+/**
+ * Check warning conditions and do some notifications on new chain tip set. 
+ * 检测警告条件并且进行通知更新新块到链上
+ * 
+ * */
 void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainParams) {
     // New best block
     mempool.AddTransactionsUpdated(1);
@@ -2316,13 +2329,23 @@ public:
 /**
  * Connect a new block to chainActive. pblock is either nullptr or a pointer to a CBlock
  * corresponding to pindexNew, to bypass loading it again from disk.
- *
+ * 连接新的区块到chainActive pblock为nullptr或者指向CBlock
  * The block is added to connectTrace if connection succeeds.
+ * 如果连接成功,区块被连接到connectTrace
+ * 
  */
 bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool)
 {
     assert(pindexNew->pprev == chainActive.Tip());
+
+     ////////////////////////////////////////////////////////////////
+    // add by glennxu
+    // 用来测试产生hash是有效hash
+    LogPrintf("[notice] ConnectTip(): before SetTip block hash: %s \n", pindexNew->GetBlockHash().ToString());
+    ////////////////////////////////////////////////////////////////
+
     // Read block from disk.
+    // 从disk里面读取block
     int64_t nTime1 = GetTimeMicros();
     std::shared_ptr<const CBlock> pthisBlock;
     if (!pblock) {
@@ -2334,7 +2357,9 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
         pthisBlock = pblock;
     }
     const CBlock& blockConnecting = *pthisBlock;
+
     // Apply the block atomically to the chain state.
+    // 应用区块自动到链条状态
     int64_t nTime2 = GetTimeMicros(); nTimeReadFromDisk += nTime2 - nTime1;
     int64_t nTime3;
     LogPrint(BCLog::BENCH, "  - Load block from disk: %.2fms [%.2fs]\n", (nTime2 - nTime1) * MILLI, nTimeReadFromDisk * MICRO);
@@ -2354,16 +2379,27 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     }
     int64_t nTime4 = GetTimeMicros(); nTimeFlush += nTime4 - nTime3;
     LogPrint(BCLog::BENCH, "  - Flush: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime4 - nTime3) * MILLI, nTimeFlush * MICRO, nTimeFlush * MILLI / nBlocksTotal);
+    
     // Write the chain state to disk, if necessary.
+    // 
     if (!FlushStateToDisk(chainparams, state, FLUSH_STATE_IF_NEEDED))
         return false;
     int64_t nTime5 = GetTimeMicros(); nTimeChainState += nTime5 - nTime4;
     LogPrint(BCLog::BENCH, "  - Writing chainstate: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime5 - nTime4) * MILLI, nTimeChainState * MICRO, nTimeChainState * MILLI / nBlocksTotal);
+   
     // Remove conflicting transactions from the mempool.;
+    // 从内存迟移除冲突交易
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
     disconnectpool.removeForBlock(blockConnecting.vtx);
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
+
+    ////////////////////////////////////////////////////////////////
+    // add by glennxu
+    // 用来测试产生hash是有效hash
+    LogPrintf("[notice] ConnectTip(): after SetTip block hash: %s \n", pindexNew->GetBlockHash().ToString());
+    ////////////////////////////////////////////////////////////////
+
     UpdateTip(pindexNew, chainparams);
 
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
@@ -2377,12 +2413,16 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
 /**
  * Return the tip of the chain with the most work in it, that isn't
  * known to be invalid (it's however far from certain to be valid).
+ * 返回区块的一个Index也是一个区块的tip,不能判断是否是合法
+ * 这里用来生成区块的索引
+ * 
  */
 CBlockIndex* CChainState::FindMostWorkChain() {
     do {
         CBlockIndex *pindexNew = nullptr;
 
         // Find the best candidate header.
+        // 找到最好的候选的header
         {
             std::set<CBlockIndex*, CBlockIndexWorkComparator>::reverse_iterator it = setBlockIndexCandidates.rbegin();
             if (it == setBlockIndexCandidates.rend())
@@ -2392,6 +2432,7 @@ CBlockIndex* CChainState::FindMostWorkChain() {
 
         // Check whether all blocks on the path between the currently active chain and the candidate are valid.
         // Just going until the active chain is an optimization, as we know all blocks in it are valid already.
+        // 
         CBlockIndex *pindexTest = pindexNew;
         bool fInvalidAncestor = false;
         while (pindexTest && !chainActive.Contains(pindexTest)) {
@@ -2404,11 +2445,15 @@ CBlockIndex* CChainState::FindMostWorkChain() {
             bool fFailedChain = pindexTest->nStatus & BLOCK_FAILED_MASK;
             bool fMissingData = !(pindexTest->nStatus & BLOCK_HAVE_DATA);
             if (fFailedChain || fMissingData) {
+
                 // Candidate chain is not usable (either invalid or missing data)
+                // 候选链不可用
                 if (fFailedChain && (pindexBestInvalid == nullptr || pindexNew->nChainWork > pindexBestInvalid->nChainWork))
                     pindexBestInvalid = pindexNew;
                 CBlockIndex *pindexFailed = pindexNew;
+
                 // Remove the entire chain from the set.
+                // 从集合中移除整条链
                 while (pindexTest != pindexFailed) {
                     if (fFailedChain) {
                         pindexFailed->nStatus |= BLOCK_FAILED_CHILD;
@@ -2416,6 +2461,7 @@ CBlockIndex* CChainState::FindMostWorkChain() {
                         // If we're missing data, then add back to mapBlocksUnlinked,
                         // so that if the block arrives in the future we can try adding
                         // to setBlockIndexCandidates again.
+                        // 
                         mapBlocksUnlinked.insert(std::make_pair(pindexFailed->pprev, pindexFailed));
                     }
                     setBlockIndexCandidates.erase(pindexFailed);
@@ -2447,6 +2493,7 @@ void CChainState::PruneBlockIndexCandidates() {
 /**
  * Try to make some progress towards making pindexMostWork the active block.
  * pblock is either nullptr or a pointer to a CBlock corresponding to pindexMostWork.
+ * 
  */
 bool CChainState::ActivateBestChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace)
 {
@@ -2554,13 +2601,18 @@ static void NotifyHeaderTip() {
  * Make the best chain active, in multiple steps. The result is either failure
  * or an activated best chain. pblock is either nullptr or a pointer to a block
  * that is already loaded (to avoid loading it again from disk).
+ * 激活bestChain
+ * 
  */
 bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock) {
     // Note that while we're often called here from ProcessNewBlock, this is
     // far from a guarantee. Things in the P2P/RPC will often end up calling
     // us in the middle of ProcessNewBlock - do not assume pblock is set
     // sanely for performance or correctness!
+    // 
     AssertLockNotHeld(cs_main);
+
+    LogPrintf("[notice] CChainState ActivateBestChain!!\n");
 
     CBlockIndex *pindexMostWork = nullptr;
     CBlockIndex *pindexNewTip = nullptr;
@@ -2586,22 +2638,37 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
 
             CBlockIndex *pindexOldTip = chainActive.Tip();
             if (pindexMostWork == nullptr) {
+                
                 pindexMostWork = FindMostWorkChain();
+
+                ////////////////////////////////////////////////////////////////
+                // add by glennxu
+                LogPrintf("[notice] FindMostWorkChain to pindexMostWork111 :%s\n",pindexMostWork->GetBlockHash().ToString());
+                ////////////////////////////////////////////////////////////////
+            }
+            else{
+                 // 不会执行到这里
+                 LogPrintf("[notice] FindMostWorkChain to pindexMostWork222 :%s\n",pindexMostWork->GetBlockHash().ToString());
             }
 
             // Whether we have anything to do at all.
             if (pindexMostWork == nullptr || pindexMostWork == chainActive.Tip())
                 return true;
 
+            LogPrintf("[notice] ActivateBestChainStep step\n");
+
             bool fInvalidFound = false;
             std::shared_ptr<const CBlock> nullBlockPtr;
             if (!ActivateBestChainStep(state, chainparams, pindexMostWork, pblock && pblock->GetHash() == pindexMostWork->GetBlockHash() ? pblock : nullBlockPtr, fInvalidFound, connectTrace))
                 return false;
 
+            LogPrintf("[notice] ActivateBestChainStep step ok\n");
+
             if (fInvalidFound) {
                 // Wipe cache, we may need another branch now.
                 pindexMostWork = nullptr;
             }
+
             pindexNewTip = chainActive.Tip();
             pindexFork = chainActive.FindFork(pindexOldTip);
             fInitialDownload = IsInitialBlockDownload();
@@ -2611,6 +2678,8 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
                 GetMainSignals().BlockConnected(trace.pblock, trace.pindex, trace.conflictedTxs);
             }
         }
+
+        
         // When we reach this point, we switched to a new tip (stored in pindexNewTip).
 
         // Notifications/callbacks that can run without cs_main
@@ -2634,10 +2703,15 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
 
     return true;
 }
+
 bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock) {
     return g_chainstate.ActivateBestChain(state, chainparams, std::move(pblock));
 }
 
+/**
+ * 检测是否是宝贵的区块
+ * 
+ * */
 bool CChainState::PreciousBlock(CValidationState& state, const CChainParams& params, CBlockIndex *pindex)
 {
     {
@@ -2666,6 +2740,7 @@ bool CChainState::PreciousBlock(CValidationState& state, const CChainParams& par
 
     return ActivateBestChain(state, params, std::shared_ptr<const CBlock>());
 }
+
 bool PreciousBlock(CValidationState& state, const CChainParams& params, CBlockIndex *pindex) {
     return g_chainstate.PreciousBlock(state, params, pindex);
 }
@@ -2729,6 +2804,7 @@ bool CChainState::InvalidateBlock(CValidationState& state, const CChainParams& c
     uiInterface.NotifyBlockTip(IsInitialBlockDownload(), pindex->pprev);
     return true;
 }
+
 bool InvalidateBlock(CValidationState& state, const CChainParams& chainparams, CBlockIndex *pindex) {
     return g_chainstate.InvalidateBlock(state, chainparams, pindex);
 }
@@ -2804,7 +2880,11 @@ CBlockIndex* CChainState::AddToBlockIndex(const CBlockHeader& block)
     return pindexNew;
 }
 
-/** Mark a block as having its data received and checked (up to BLOCK_VALID_TRANSACTIONS). */
+/**
+ * Mark a block as having its data received and checked (up to BLOCK_VALID_TRANSACTIONS). 
+ * 标记区块有数据被接收并且检测完成
+ * 
+ * */
 bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationState& state, CBlockIndex *pindexNew, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
 {
     pindexNew->nTx = block.vtx.size();
@@ -2813,11 +2893,14 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
     pindexNew->nDataPos = pos.nPos;
     pindexNew->nUndoPos = 0;
     pindexNew->nStatus |= BLOCK_HAVE_DATA;
+
     if (IsWitnessEnabled(pindexNew->pprev, consensusParams)) {
         pindexNew->nStatus |= BLOCK_OPT_WITNESS;
     }
     pindexNew->RaiseValidity(BLOCK_VALID_TRANSACTIONS);
     setDirtyBlockIndex.insert(pindexNew);
+
+    LogPrintf("[notice] ReceivedBlockTransactions\n");
 
     if (pindexNew->pprev == nullptr || pindexNew->pprev->nChainTx) {
         // If pindexNew is the genesis block or all parents are BLOCK_VALID_TRANSACTIONS.
@@ -3309,9 +3392,15 @@ static CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CCh
     return blockPos;
 }
 
-/** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
+/**
+ * Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk 
+ * 存储区块在disk
+ * 
+ * */
 bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex, bool fRequested, const CDiskBlockPos* dbp, bool* fNewBlock)
 {
+    LogPrintf("[notice] AcceptBlock\n");
+
     const CBlock& block = *pblock;
 
     if (fNewBlock) *fNewBlock = false;
@@ -3371,12 +3460,15 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         GetMainSignals().NewPoWValidBlock(pindex, pblock);
 
     // Write block to history file
+    // 写入块到历史文件
     try {
         CDiskBlockPos blockPos = SaveBlockToDisk(block, pindex->nHeight, chainparams, dbp);
         if (blockPos.IsNull()) {
             state.Error(strprintf("%s: Failed to find position to write new block to disk", __func__));
             return false;
         }
+
+        //检测是否接收区块交易数据?
         if (!ReceivedBlockTransactions(block, state, pindex, blockPos, chainparams.GetConsensus()))
             return error("AcceptBlock(): ReceivedBlockTransactions failed");
     } catch (const std::runtime_error& e) {
@@ -3648,10 +3740,16 @@ fs::path GetBlockPosFilename(const CDiskBlockPos &pos, const char *prefix)
     return GetDataDir() / "blocks" / strprintf("%s%05u.dat", prefix, pos.nFile);
 }
 
+/**
+ * 通过hash构建区块索引
+ * 
+ * */
 CBlockIndex * CChainState::InsertBlockIndex(const uint256& hash)
 {
     if (hash.IsNull())
         return nullptr;
+
+    LogPrintf("[notice] InsertBlockIndex:%s", hash.ToString());
 
     // Return existing
     BlockMap::iterator mi = mapBlockIndex.find(hash);
@@ -4162,8 +4260,14 @@ bool LoadBlockIndex(const CChainParams& chainparams)
     return true;
 }
 
+/**
+ * 加载创世块
+ * 
+ * */
 bool CChainState::LoadGenesisBlock(const CChainParams& chainparams)
 {
+    LogPrintf("[notice] LoadGenesisBlock\n");
+
     LOCK(cs_main);
 
     // Check whether we're already initialized by checking for genesis in
@@ -4180,6 +4284,8 @@ bool CChainState::LoadGenesisBlock(const CChainParams& chainparams)
             return error("%s: writing genesis block to disk failed", __func__);
         CBlockIndex *pindex = AddToBlockIndex(block);
         CValidationState state;
+
+        //
         if (!ReceivedBlockTransactions(block, state, pindex, blockPos, chainparams.GetConsensus()))
             return error("%s: genesis block not accepted", __func__);
     } catch (const std::runtime_error& e) {

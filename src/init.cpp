@@ -665,12 +665,16 @@ void ThreadImport(std::vector<fs::path> vImportFiles)
         }
     }
 
+    LogPrintf("[notice] try connect best block from ActivateBestChain!!!\n");
+
     // scan for better chains in the block chain database, that are not yet connected in the active best chain
     CValidationState state;
     if (!ActivateBestChain(state, chainparams)) {
         LogPrintf("Failed to connect best block");
         StartShutdown();
     }
+
+    LogPrintf("[notice] connect best block ok!!!\n");
 
     if (gArgs.GetBoolArg("-stopafterblockimport", DEFAULT_STOPAFTERBLOCKIMPORT)) {
         LogPrintf("Stopping after block import\n");
