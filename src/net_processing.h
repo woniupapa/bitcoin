@@ -35,6 +35,11 @@ static constexpr int64_t EXTRA_PEER_CHECK_INTERVAL = 45;
 /** Minimum time an outbound-peer-eviction candidate must be connected for, in order to evict, in seconds */
 static constexpr int64_t MINIMUM_CONNECT_TIME = 30;
 
+
+/**
+ * Peer逻辑验证
+ * 
+ * */
 class PeerLogicValidation : public CValidationInterface, public NetEventsInterface {
 private:
     CConnman* const connman;
@@ -50,14 +55,21 @@ public:
 
     void InitializeNode(CNode* pnode) override;
     void FinalizeNode(NodeId nodeid, bool& fUpdateConnectionTime) override;
-    /** Process protocol messages received from a given node */
+    /** 
+     * Process protocol messages received from a given node 
+     * 处理来自给定几点的协议消息
+     * 
+     * */
     bool ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt) override;
+
+
     /**
     * Send queued protocol messages to be sent to a give node.
-    *
+    * 发送排序消息被发送到给定节点
     * @param[in]   pto             The node which we are sending messages to.
     * @param[in]   interrupt       Interrupt condition for processing threads
     * @return                      True if there is more work to be done
+    *
     */
     bool SendMessages(CNode* pto, std::atomic<bool>& interrupt) override;
 

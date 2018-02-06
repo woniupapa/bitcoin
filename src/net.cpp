@@ -1067,6 +1067,11 @@ bool CConnman::AttemptToEvictConnection()
     return false;
 }
 
+/**
+ * 接受Peer连接
+ * 
+ * 
+ * */
 void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     struct sockaddr_storage sockaddr;
     socklen_t len = sizeof(sockaddr);
@@ -1135,6 +1140,7 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
     CAddress addr_bind = GetBindAddress(hSocket);
 
+    // 初始化一个node当作一个peer??
     CNode* pnode = new CNode(id, nLocalServices, GetBestHeight(), hSocket, addr, CalculateKeyedNetGroup(addr), nonce, addr_bind, "", true);
     pnode->AddRef();
     pnode->fWhitelisted = whitelisted;
@@ -2003,6 +2009,10 @@ bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFai
     return true;
 }
 
+/**
+ * 消息线程handler消息
+ * 
+ * */
 void CConnman::ThreadMessageHandler()
 {
     while (!flagInterruptMsgProc)
@@ -2020,6 +2030,7 @@ void CConnman::ThreadMessageHandler()
 
         for (CNode* pnode : vNodesCopy)
         {
+            // 判断节点是否断开
             if (pnode->fDisconnect)
                 continue;
 
@@ -2029,6 +2040,7 @@ void CConnman::ThreadMessageHandler()
             if (flagInterruptMsgProc)
                 return;
             // Send messages
+            // 发送消息
             {
                 LOCK(pnode->cs_sendProcessing);
                 m_msgproc->SendMessages(pnode, flagInterruptMsgProc);
