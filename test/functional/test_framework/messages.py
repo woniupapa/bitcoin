@@ -222,6 +222,7 @@ class CInv():
 
     def deserialize(self, f):
         self.type = struct.unpack("<i", f.read(4))[0]
+        
         self.hash = deser_uint256(f)
 
     def serialize(self):
