@@ -1775,7 +1775,15 @@ static int64_t nBlocksTotal = 0;
 
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
- *  can fail if those validity checks fail (among other reasons). */
+ *  can fail if those validity checks fail (among other reasons). 
+ * 
+ * @param block
+ * @param pindex
+ * @param view
+ * @param chainparams
+ * @param fJustCheck
+ * 
+ * */
 bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex,
                   CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck)
 {
@@ -2332,6 +2340,14 @@ public:
  * 连接新的区块到chainActive pblock为nullptr或者指向CBlock
  * The block is added to connectTrace if connection succeeds.
  * 如果连接成功,区块被连接到connectTrace
+ * 进入这个逻辑说明区块被认可了？
+ * 
+ * @param state
+ * @param chainparams
+ * @param pindexNew
+ * @param pblock
+ * @param connectTrace
+ * @param disconnectpool
  * 
  */
 bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool)
@@ -2365,7 +2381,11 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     LogPrint(BCLog::BENCH, "  - Load block from disk: %.2fms [%.2fs]\n", (nTime2 - nTime1) * MILLI, nTimeReadFromDisk * MICRO);
     {
         CCoinsViewCache view(pcoinsTip.get());
+
+        // 这里将有效的区块以及区块索引链接到区块
         bool rv = ConnectBlock(blockConnecting, state, pindexNew, view, chainparams);
+
+        // 发送消息区块连接到区块链了，可能是要广播给其他peer?
         GetMainSignals().BlockChecked(blockConnecting, state);
         if (!rv) {
             if (state.IsInvalid())
@@ -2381,7 +2401,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     LogPrint(BCLog::BENCH, "  - Flush: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime4 - nTime3) * MILLI, nTimeFlush * MICRO, nTimeFlush * MILLI / nBlocksTotal);
     
     // Write the chain state to disk, if necessary.
-    // 
+    // 如果有必要，写入区块链到磁盘
     if (!FlushStateToDisk(chainparams, state, FLUSH_STATE_IF_NEEDED))
         return false;
     int64_t nTime5 = GetTimeMicros(); nTimeChainState += nTime5 - nTime4;
@@ -2391,7 +2411,9 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // 从内存迟移除冲突交易
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
     disconnectpool.removeForBlock(blockConnecting.vtx);
+
     // Update chainActive & related variables.
+    // 将新的区块索引放置到激活的区块链里面。但是这个时候的区块是否有效了呢??
     chainActive.SetTip(pindexNew);
 
     ////////////////////////////////////////////////////////////////
@@ -2846,6 +2868,12 @@ bool ResetBlockFailureFlags(CBlockIndex *pindex) {
     return g_chainstate.ResetBlockFailureFlags(pindex);
 }
 
+
+/**
+ * 将区块头添加到区块索引中?
+ * @param block
+ * 
+ * */
 CBlockIndex* CChainState::AddToBlockIndex(const CBlockHeader& block)
 {
     // Check for duplicate
@@ -2855,6 +2883,7 @@ CBlockIndex* CChainState::AddToBlockIndex(const CBlockHeader& block)
         return it->second;
 
     // Construct new block index object
+    // 构造新区块索引对象
     CBlockIndex* pindexNew = new CBlockIndex(block);
     // We assign the sequence id to blocks only when the full data is available,
     // to avoid miners withholding blocks but broadcasting headers, to get a
@@ -3129,6 +3158,13 @@ void UpdateUncommittedBlockStructures(CBlock& block, const CBlockIndex* pindexPr
     }
 }
 
+/**
+ * 生成Coinbase 
+ * @param  block
+ * @param  pindexPrev
+ * @param  consensusParams
+ * 
+ * */
 std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
 {
     std::vector<unsigned char> commitment;
@@ -3293,6 +3329,15 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     return true;
 }
 
+
+/**
+ * 接受区块头
+ * @param block blockHeader
+ * @param state
+ * @param chainparams
+ * @param ppindex
+ * 
+ * */
 bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex)
 {
     AssertLockHeld(cs_main);
@@ -3352,7 +3397,11 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
     return true;
 }
 
-// Exposed wrapper for AcceptBlockHeader
+/**
+ * Exposed wrapper for AcceptBlockHeader
+ * 判断处理是否是新的区块头
+ * 
+ **/
 bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex, CBlockHeader *first_invalid)
 {
     if (first_invalid != nullptr) first_invalid->SetNull();
@@ -3483,6 +3532,15 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     return true;
 }
 
+/**
+ * 处理新区块
+ * @param chainparams
+ * @param pblock
+ * @param fNewBlock
+ * 
+ * @return
+ * 
+ * */
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
     AssertLockNotHeld(cs_main);
@@ -4284,6 +4342,8 @@ bool CChainState::LoadGenesisBlock(const CChainParams& chainparams)
             return error("%s: writing genesis block to disk failed", __func__);
         CBlockIndex *pindex = AddToBlockIndex(block);
         CValidationState state;
+
+        LogPrintf("[notice] LoadGenesisBlock %s\n",pindex->GetBlockHash().ToString());
 
         //
         if (!ReceivedBlockTransactions(block, state, pindex, blockPos, chainparams.GetConsensus()))
