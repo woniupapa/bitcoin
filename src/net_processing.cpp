@@ -459,8 +459,11 @@ bool PeerHasHeader(CNodeState *state, const CBlockIndex *pindex)
     return false;
 }
 
-/** Update pindexLastCommonBlock and add not-in-flight missing successors to vBlocks, until it has
- *  at most count entries. */
+/** 
+ * Update pindexLastCommonBlock and add not-in-flight missing successors to vBlocks, until it has
+ *  at most count entries.
+ *  
+ * */
 void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<const CBlockIndex*>& vBlocks, NodeId& nodeStaller, const Consensus::Params& consensusParams) {
     if (count == 0)
         return;
@@ -918,6 +921,10 @@ void PeerLogicValidation::UpdatedBlockTip(const CBlockIndex *pindexNew, const CB
     nTimeBestReceived = GetTime();
 }
 
+/**
+ * 节点逻辑验证,验证区块
+ * 
+ * */
 void PeerLogicValidation::BlockChecked(const CBlock& block, const CValidationState& state) {
     LOCK(cs_main);
 
@@ -1038,6 +1045,11 @@ static void RelayAddress(const CAddress& addr, bool fReachable, CConnman* connma
     connman->ForEachNodeThen(std::move(sortfunc), std::move(pushfunc));
 }
 
+
+/**
+ * 处理Block数据
+ * 
+ * */
 void static ProcessGetBlockData(CNode* pfrom, const Consensus::Params& consensusParams, const CInv& inv, CConnman* connman, const std::atomic<bool>& interruptMsgProc)
 {
     bool send = false;
@@ -1167,6 +1179,7 @@ void static ProcessGetBlockData(CNode* pfrom, const Consensus::Params& consensus
         }
 
         // Trigger the peer node to send a getblocks request for the next batch of inventory
+        // 触发peer节点的并且发送getblocks请求下个批次的inventory
         if (inv.hash == pfrom->hashContinue)
         {
             // Bypass PushInventory, this must send even if redundant,
@@ -1272,6 +1285,11 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCKTXN, resp));
 }
 
+
+/**
+ * 收到Header消息,进行消息处理
+ * 
+ * */
 bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::vector<CBlockHeader>& headers, const CChainParams& chainparams, bool punish_duplicate_invalid)
 {
     const CNetMsgMaker msgMaker(pfrom->GetSendVersion());
@@ -1333,6 +1351,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
 
     CValidationState state;
     CBlockHeader first_invalid_header;
+    // 判断下是否是处理新的区块头
     if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, &first_invalid_header)) {
         int nDoS;
         if (state.IsInvalid(nDoS)) {
@@ -1421,10 +1440,14 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
                 }
                 pindexWalk = pindexWalk->pprev;
             }
+            
+            
             // If pindexWalk still isn't on our main chain, we're looking at a
             // very large reorg at a time we think we're close to caught up to
             // the main chain -- this shouldn't really happen.  Bail out on the
             // direct fetch and rely on parallel download instead.
+            // 
+
             if (!chainActive.Contains(pindexWalk)) {
                 LogPrint(BCLog::NET, "Large reorg, won't direct fetch to %s (%d)\n",
                         pindexLast->GetBlockHash().ToString(),
@@ -1432,6 +1455,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
             } else {
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
+                LogPrintf("[notice] Download as much as possible, from earliest to latest.");
                 for (const CBlockIndex *pindex : reverse_iterate(vToFetch)) {
                     if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                         // Can't download any more from this peer
@@ -2597,13 +2621,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
     }
 
-
+    // 接受到header指令    
     else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
     {
         std::vector<CBlockHeader> headers;
 
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
+        // 获得Header里面包含多少个其他node header的hash，注意下最多2000个block的header
         unsigned int nCount = ReadCompactSize(vRecv);
+
+        LogPrintf("[notice] get headers command count:%d", nCount);
         if (nCount > MAX_HEADERS_RESULTS) {
             LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 20);
@@ -2612,13 +2639,14 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         headers.resize(nCount);
         for (unsigned int n = 0; n < nCount; n++) {
             vRecv >> headers[n];
-            ReadCompactSize(vRecv); // ignore tx count; assume it is 0.
+            ReadCompactSize(vRecv); // ignore tx count; assume it is 0. 忽略交易数量
         }
 
         // Headers received via a HEADERS message should be valid, and reflect
         // the chain the peer is on. If we receive a known-invalid header,
         // disconnect the peer if it is using one of our outbound connection
         // slots.
+        // 
         bool should_punish = !pfrom->fInbound && !pfrom->m_manual_connection;
         return ProcessHeadersMessage(pfrom, connman, headers, chainparams, should_punish);
     }
@@ -2902,6 +2930,7 @@ bool PeerLogicValidation::ProcessMessages(CNode* pfrom, std::atomic<bool>& inter
     const CChainParams& chainparams = Params();
     //
     // Message format
+    // 消息格式
     //  (4) message start
     //  (12) command
     //  (4) size
@@ -3164,6 +3193,13 @@ public:
     }
 };
 
+
+/**
+ * 发送消息
+ * @param pto
+ * @param interruptMsgProc
+ * 
+ * */
 bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptMsgProc)
 {
     const Consensus::Params& consensusParams = Params().GetConsensus();
@@ -3221,7 +3257,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
 
         //
         // Message: addr
-        //
+        // 发送addr
         if (pto->nNextAddrSend < nNow) {
             pto->nNextAddrSend = PoissonNextSend(nNow, AVG_ADDRESS_BROADCAST_INTERVAL);
             std::vector<CAddress> vAddr;
@@ -3249,6 +3285,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
         }
 
         // Start block sync
+        // 开始区块同步
         if (pindexBestHeader == nullptr)
             pindexBestHeader = chainActive.Tip();
         bool fFetch = state.fPreferredDownload || (nPreferredDownload == 0 && !pto->fClient && !pto->fOneShot); // Download if this is a nice peer, or we have no nice peers and this one might do.
@@ -3269,6 +3306,8 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
                 if (pindexStart->pprev)
                     pindexStart = pindexStart->pprev;
                 LogPrint(BCLog::NET, "initial getheaders (%d) to peer=%d (startheight:%d)\n", pindexStart->nHeight, pto->GetId(), pto->nStartingHeight);
+
+                // 发送getheaders命令
                 connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexStart), uint256()));
             }
         }
@@ -3414,8 +3453,10 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
                     // If the peer's chain has this block, don't inv it back.
                     if (!PeerHasHeader(&state, pindex)) {
                         pto->PushInventory(CInv(MSG_BLOCK, hashToAnnounce));
-                        LogPrint(BCLog::NET, "%s: sending inv peer=%d hash=%s\n", __func__,
-                            pto->GetId(), hashToAnnounce.ToString());
+
+                        // 新增block index的高度以及Hash
+                        LogPrint(BCLog::NET, "%s: sending inv peer=%d hash=%s blockHeight:%u blockHash:%s\n", __func__,
+                            pto->GetId(), hashToAnnounce.ToString(),pindex->nHeight,pindex->GetBlockHash().ToString());
                     }
                 }
             }
@@ -3424,6 +3465,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
 
         //
         // Message: inventory
+        // 
         //
         std::vector<CInv> vInv;
         {
@@ -3431,8 +3473,12 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
             vInv.reserve(std::max<size_t>(pto->vInventoryBlockToSend.size(), INVENTORY_BROADCAST_MAX));
 
             // Add blocks
+            // 添加区块
+            //LogPrintf("[notice] add blocks \n");
             for (const uint256& hash : pto->vInventoryBlockToSend) {
                 vInv.push_back(CInv(MSG_BLOCK, hash));
+
+                // 注意下这里发送条件:vInv数量要等于MAX_INV_SZ
                 if (vInv.size() == MAX_INV_SZ) {
                     connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
                     vInv.clear();
@@ -3488,6 +3534,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
             }
 
             // Determine transactions to relay
+            // 
             if (fSendTrickle) {
                 // Produce a vector with all candidates for sending
                 std::vector<std::set<uint256>::iterator> vInvTx;
@@ -3553,8 +3600,11 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
                 }
             }
         }
-        if (!vInv.empty())
+
+        // 发送Inv数据到node
+        if (!vInv.empty()){
             connman->PushMessage(pto, msgMaker.Make(NetMsgType::INV, vInv));
+        }
 
         // Detect whether we're stalling
         nNow = GetTimeMicros();
@@ -3580,7 +3630,10 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
                 return true;
             }
         }
+
+
         // Check for headers sync timeouts
+        // 检测Headers的同步超时时间
         if (state.fSyncStarted && state.nHeadersSyncTimeout < std::numeric_limits<int64_t>::max()) {
             // Detect whether this is a stalling initial-headers-sync peer
             if (pindexBestHeader->GetBlockTime() <= GetAdjustedTime() - 24*60*60) {
@@ -3619,7 +3672,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto, std::atomic<bool>& interruptM
 
         //
         // Message: getdata (blocks)
-        //
+        // 获得区块数据vGetData里面保存需要获取数据的Inv
         std::vector<CInv> vGetData;
         if (!pto->fClient && (fFetch || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
             std::vector<const CBlockIndex*> vToDownload;
