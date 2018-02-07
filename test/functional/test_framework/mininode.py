@@ -268,7 +268,7 @@ class P2PConnection(asyncore.dispatcher):
         datalen = len(data);
 
         if command == b"headers":
-            logger.info("[notice] is headers:%s" % data)
+            logger.info("[notice] is headers:%s" % message)
 
         logger.info("[notice] send command:%s len:%d" % (command , datalen))
 

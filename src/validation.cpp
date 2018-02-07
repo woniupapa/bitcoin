@@ -3053,6 +3053,17 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
+
+/**
+ * 检测区块头
+ * @param block
+ * @param state
+ * @param consensusParams
+ * @param fCheckPOW
+ * 
+ * @return
+ * 
+ * */
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
@@ -3062,6 +3073,17 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     return true;
 }
 
+/**
+ * 检测区块
+ * @param block
+ * @param state
+ * @param consensusParams
+ * @param fCheckPOW
+ * @param fCheckMerkleRoot
+ * 
+ * @return
+ * 
+ * */
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
@@ -3535,10 +3557,13 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 /**
  * 处理新区块
  * @param chainparams
- * @param pblock
+ * @param pblock      从网络端接受的block
  * @param fNewBlock
  * 
  * @return
+ * 
+ * 1.从网络端接受的区块,如何验证区块有效性。
+ * 2.如何添加到ActiveChain里面
  * 
  * */
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
