@@ -34,12 +34,18 @@
 //
 // BitcoinMiner
 //
+//
 
 //
 // Unconfirmed transactions in the memory pool often depend on other
 // transactions in the memory pool. When we select transactions from the
 // pool, we select by highest fee rate of a transaction combined with all
 // its ancestors.
+
+/**
+ * 建立区块也是挖矿的过程之一
+ * 
+ * */
 
 uint64_t nLastBlockTx = 0;
 uint64_t nLastBlockWeight = 0;
@@ -119,6 +125,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     resetBlock();
 
+    // 通过模版接口重置新的CBlockTemplate
     pblocktemplate.reset(new CBlockTemplate());
 
     if(!pblocktemplate.get())
@@ -126,6 +133,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock = &pblocktemplate->block; // pointer for convenience
 
     // Add dummy coinbase tx as first transaction
+    // 建立区块的时候需要添加空白的coinbase,当作第一笔交易,其实也说明是挖处的矿作为第一笔输出?
     pblock->vtx.emplace_back();
     pblocktemplate->vTxFees.push_back(-1); // updated at end
     pblocktemplate->vTxSigOpsCost.push_back(-1); // updated at end
@@ -133,7 +141,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // 需要锁定下mempool.cs
     LOCK2(cs_main, mempool.cs);
 
-    //??初次建立的时候为啥这个不为空
+    //??初次建立的时候为啥这个不为空,因为有创世块，所以首次在regnet模式下首次获得是创世区块hash为
+    // 0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206
     // 为啥要建立索引，索引为了更方便查找区块?
     CBlockIndex* pindexPrev = chainActive.Tip();
     assert(pindexPrev != nullptr);
@@ -193,14 +202,15 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     LogPrintf("CreateNewBlock(): block weight: %u height: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nHeight, nBlockTx, nFees, nBlockSigOpsCost);
 
     // Fill in header
+    // 填充Block Header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
     pblock->nNonce         = 0;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
-    // 注意pblock->GetHash().ToString() 通过这种方式产生hash是不正确的?智能通过blockIndex来产生Hash?
-    LogPrintf("[notice] CreateNewBlock(): block hash: %s height: %u\n", pblock->GetHash().ToString(), nHeight);
+    // 注意pblock->GetHash().ToString() 通过这种方式产生hash是不正确的?只能通过blockIndex来产生Hash?
+    // LogPrintf("[notice] CreateNewBlock(): block hash: %s height: %u\n", pblock->GetHash().ToString(), nHeight);
 
     CValidationState state;
     if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {

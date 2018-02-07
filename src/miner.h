@@ -135,11 +135,12 @@ private:
     CFeeRate blockMinFeeRate;
 
     // Information on the current status of the block
-    uint64_t nBlockWeight;
-    uint64_t nBlockTx;
-    uint64_t nBlockSigOpsCost;
-    CAmount nFees;
-    CTxMemPool::setEntries inBlock;
+    // 块当前状态信息
+    uint64_t nBlockWeight;  // 为啥要有这个
+    uint64_t nBlockTx;      // 块交易数量？ 
+    uint64_t nBlockSigOpsCost; //
+    CAmount nFees; // 块的费率
+    CTxMemPool::setEntries inBlock; // 块中的交易信息？？
 
     // Chain context for the block
     int nHeight;
