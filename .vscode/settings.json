@@ -49,6 +49,7 @@
         "cwctype": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "future": "cpp"
     }
 }
