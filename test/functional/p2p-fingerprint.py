@@ -26,6 +26,9 @@ from test_framework.util import (
     assert_equal,
 )
 
+import urllib.parse
+import subprocess
+
 class P2PFingerprintTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
@@ -75,7 +78,26 @@ class P2PFingerprintTest(BitcoinTestFramework):
     # This does not currently test that stale blocks timestamped within the
     # last month but that have over a month's worth of work are also withheld.
     def run_test(self):
+        
+        logfilePath = self.options.tmpdir + '/test_framework.log'
+
+        self.log.info(logfilePath)
+
+        #subprocess.call(['open', '-W', '-a', 'Terminal.app', 'tail', '-f', logfilePath])
+        #subprocess.call(['tail', '-f', logfilePath])
+
+        #nodetest = P2PInterface();
+        #node0表示测试节点  self.nodes[0]表示bitcoin实际节点
         node0 = self.nodes[0].add_p2p_connection(P2PInterface())
+
+        #节点信息这里是指连上bitcoin实际节点的节点信息
+        networkinfo = self.nodes[0].getnetworkinfo()
+        self.log.info(networkinfo)
+
+        url = urllib.parse.urlparse(self.nodes[0].url)
+        #nodeurl = 'url:%s' % (self.nodes[0]["url"])
+        self.log.info(url)
+
 
         network_thread_start()
         node0.wait_for_verack()
@@ -84,7 +106,13 @@ class P2PFingerprintTest(BitcoinTestFramework):
         self.nodes[0].setmocktime(int(time.time()) - 60 * 24 * 60 * 60)
 
         # Generating a chain of 10 blocks
+        #生成10个区块链
         block_hashes = self.nodes[0].generate(nblocks=10)
+
+        for i in range(0, len(block_hashes)):
+            message = '[%s]:%s' % (i, block_hashes[i])
+            self.log.info(message)
+
 
         # Create longer chain starting 2 blocks before current tip
         height = len(block_hashes) - 2

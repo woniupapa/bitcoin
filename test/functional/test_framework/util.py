@@ -206,6 +206,7 @@ def wait_until(predicate, *, attempts=float('inf'), timeout=float('inf'), lock=N
     attempt = 0
     timeout += time.time()
 
+    #循环判断如果predicate在非超时时间内。执行predicate函数
     while attempt < attempts and time.time() < timeout:
         if lock:
             with lock:
@@ -268,6 +269,7 @@ def p2p_port(n):
 def rpc_port(n):
     return PORT_MIN + PORT_RANGE + n + (MAX_NODES * PortSeed.n) % (PORT_RANGE - 1 - MAX_NODES)
 
+#构造rpc的url路径
 def rpc_url(datadir, i, rpchost=None):
     rpc_u, rpc_p = get_auth_cookie(datadir)
     host = '127.0.0.1'
@@ -282,7 +284,7 @@ def rpc_url(datadir, i, rpchost=None):
 
 # Node functions
 ################
-
+#初始化数据目录
 def initialize_datadir(dirname, n):
     datadir = os.path.join(dirname, "node" + str(n))
     if not os.path.isdir(datadir):
@@ -294,9 +296,11 @@ def initialize_datadir(dirname, n):
         f.write("listenonion=0\n")
     return datadir
 
+#获取数据目录路径
 def get_datadir_path(dirname, n):
     return os.path.join(dirname, "node" + str(n))
 
+#获得auth的cookie
 def get_auth_cookie(datadir):
     user = None
     password = None
@@ -309,6 +313,8 @@ def get_auth_cookie(datadir):
                 if line.startswith("rpcpassword="):
                     assert password is None  # Ensure that there is only one rpcpassword line
                     password = line.split("=")[1].strip("\n")
+
+    #注意下这里是regtest模式的cookie
     if os.path.isfile(os.path.join(datadir, "regtest", ".cookie")):
         with open(os.path.join(datadir, "regtest", ".cookie"), 'r') as f:
             userpass = f.read()
