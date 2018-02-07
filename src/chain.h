@@ -436,7 +436,11 @@ public:
     }
 };
 
-/** An in-memory indexed chain of blocks. */
+/** 
+ * An in-memory indexed chain of blocks. 
+ * 在内存中的区块链
+ * 
+ * */
 class CChain {
 private:
     std::vector<CBlockIndex*> vChain;
