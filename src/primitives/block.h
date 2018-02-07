@@ -16,17 +16,21 @@
  * to everyone and the block is added to the block chain.  The first transaction
  * in the block is a special one that creates a new coin owned by the creator
  * of the block.
+ * 
  */
 class CBlockHeader
 {
 public:
     // header
-    int32_t nVersion;
-    uint256 hashPrevBlock;
-    uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+    // 总共80字节
+    int32_t nVersion;           // 版本号,用于跟踪跟踪软件/协议的更新        4字节
+    uint256 hashPrevBlock;      // 引用区块中父区块的hash                 32字节
+    uint256 hashMerkleRoot;     // 该区块中交易的Merkle树根的hash          32字节 
+
+    // 下面三个数据被用于挖矿
+    uint32_t nTime;             // 该区块产生的近似时间(精确到秒的Unix时间)  4字节
+    uint32_t nBits;             // 该区块工作量证明算法的难度目标            4字节
+    uint32_t nNonce;            // 用户工作量证明算法的计算器               4字节
 
     CBlockHeader()
     {
@@ -68,7 +72,11 @@ public:
     }
 };
 
-
+/**
+ * 区块继承自CBlockHeader
+ * 也就是包含header的80字节
+ * 
+ * */
 class CBlock : public CBlockHeader
 {
 public:
@@ -122,6 +130,10 @@ public:
 /** Describes a place in the block chain to another node such that if the
  * other node doesn't have the same branch, it can find a recent common trunk.
  * The further back it is, the further before the fork it may be.
+ * 
+ * 为啥需要这个。。
+ * 描述一个地点，在区块链到另外个节点如果另外个node没有相同的区块分支，它用来找到最接近通用主干
+ * ???
  */
 struct CBlockLocator
 {

@@ -194,6 +194,9 @@ struct CMutableTransaction;
  * - if (flags & 1):
  *   - CTxWitness wit;
  * - uint32_t nLockTime
+ * 
+ * 反序列化交易
+ * 
  */
 template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
@@ -230,6 +233,10 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     s >> tx.nLockTime;
 }
 
+/**
+ * 序列化交易
+ * 
+ * */
 template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
@@ -260,8 +267,12 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
 }
 
 
-/** The basic transaction that is broadcasted on the network and contained in
+/** 
+ * The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
+ * 保存基本交易的数据结构，用来广播到网络并且保存到区块中。
+ * 交易包含多个输入交易和输出交易
+ * 
  */
 class CTransaction
 {
@@ -360,7 +371,11 @@ public:
     }
 };
 
-/** A mutable version of CTransaction. */
+/** 
+ * A mutable version of CTransaction. 
+ * 一个可变版本的交易还是交易池??,用来存储交易？
+ * 
+ * */
 struct CMutableTransaction
 {
     std::vector<CTxIn> vin;
