@@ -83,9 +83,9 @@ class P2PFingerprintTest(BitcoinTestFramework):
     # last month but that have over a month's worth of work are also withheld.
     def run_test(self):
         
-        logfilePath = self.options.tmpdir + '/test_framework.log'
+        #logfilePath = self.options.tmpdir + '/test_framework.log'
 
-        self.log.info(logfilePath)
+        #self.log.info(logfilePath)
 
         #subprocess.call(['open', '-W', '-a', 'Terminal.app', 'tail', '-f', logfilePath])
         #subprocess.call(['tail', '-f', logfilePath])
@@ -95,12 +95,11 @@ class P2PFingerprintTest(BitcoinTestFramework):
         node0 = self.nodes[0].add_p2p_connection(P2PInterface())
 
         #节点信息这里是指连上bitcoin实际节点的节点信息
-        networkinfo = self.nodes[0].getnetworkinfo()
-        self.log.info(networkinfo)
+        #networkinfo = self.nodes[0].getnetworkinfo()
+        #self.log.info(networkinfo)
 
-        url = urllib.parse.urlparse(self.nodes[0].url)
-        #nodeurl = 'url:%s' % (self.nodes[0]["url"])
-        self.log.info(url)
+        #url = urllib.parse.urlparse(self.nodes[0].url)
+        #self.log.info(url)
 
 
         network_thread_start()
@@ -111,9 +110,12 @@ class P2PFingerprintTest(BitcoinTestFramework):
         mocktime = int(time.time()) - 60 * 24 * 60 * 60
         self.nodes[0].setmocktime(mocktime)
 
+        #nblocks=10
+        nblocks = 5
+
         # Generating a chain of 10 blocks
         #生成10个区块链
-        block_hashes = self.nodes[0].generate(nblocks=10)
+        block_hashes = self.nodes[0].generate(nblocks)
 
         #for hash in block_hashes:
         #    self.log.info(' Node: [%d]:%s' % (i, hash))
@@ -122,11 +124,15 @@ class P2PFingerprintTest(BitcoinTestFramework):
         #    self.log.info(' Node: [%d]:%s' % (i, block_hashes[i]))
 
         for i, hash in enumerate(block_hashes):
-            self.log.info('[%d]:%s' % (i, hash))
+            self.log.info('[notice] [%d]:%s' % (i, hash))
             #self.log.info('%d:%s'% (i,int(hash, 16)))
 
-        self.log.info('generate node %d' % len(block_hashes))
-        # 
+        self.log.info('notice] generate node %d' % len(block_hashes))
+        
+
+        # 在regnet情况下创世块的hash是0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206
+        #getblockhash0 = self.nodes[0].getblockhash(0)
+
         
         # Create longer chain starting 2 blocks before current tip
         height = len(block_hashes) - 2
@@ -138,7 +144,7 @@ class P2PFingerprintTest(BitcoinTestFramework):
         new_blocks = self.build_chain(5, block_hash, height, block_time)
 
         for i, hash in enumerate(new_blocks):
-            self.log.info('n [%d]:%s' % (i, hash.hash))
+            self.log.info('[notice] n [%d]:%s' % (i, hash.hash))
             #self.log.info('%d'% (int(hash.hash, 16)))
 
         # Force reorg to a longer chain
@@ -148,13 +154,17 @@ class P2PFingerprintTest(BitcoinTestFramework):
         for block in new_blocks:
             node0.send_and_ping(msg_block(block))
 
+        #blockcount = self.nodes[0].getblockcount()
+
         # Check that reorg succeeded
+        # 检测self.nodes[0]该节点上区块数量
         assert_equal(self.nodes[0].getblockcount(), 13)
 
         #取出block_hashes里面最后一条hash数据并且将它转化成16进制
         stale_hash = int(block_hashes[-1], 16)
 
         # Check that getdata request for stale block succeeds
+        # 检测getdata请求发送陈旧的块的hash给self.nodes[0]
         self.send_block_request(stale_hash, node0)
         test_function = lambda: self.last_block_equals(stale_hash, node0)
         wait_until(test_function, timeout=3)

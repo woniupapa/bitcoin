@@ -156,6 +156,8 @@ class P2PConnection(asyncore.dispatcher):
                 #分割出命令 从4开始获取12个字段 获得命令
                 command = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
                 
+                logger.info("[notice] Received command:%s" % (command))
+
                 #消息长度 4+12:4+12+4 从4+12开始位置再获取4个字节:消息长度
                 msglen = struct.unpack("<i", self.recvbuf[4+12:4+12+4])[0]
 
@@ -184,24 +186,30 @@ class P2PConnection(asyncore.dispatcher):
                 #找到command对应的消息对象
                 t = MESSAGEMAP[command]()
 
-                #将服务器数据序列化到消息对象
-                t.deserialize(f)
+                #############################################
+                # 
+
+                if command == b"inv":
+                    debug = 1
+                    #将服务器数据序列化到消息对象
+                    t.deserialize(f)
+                else:
+                    #将服务器数据序列化到消息对象
+                    t.deserialize(f)
 
                 #############################################
-                #测试协议
-                if command == b'addr':
+                #打印协议数据段内容
+                if command == b"addr":
                     testAddr = 0
 
                 # 收到inv协议,获取inv的hash
                 # 会发送getdata,带上hash数据,self.nodes[0]会发送新的block数据过来
-                if command == b'inv':
-                    logger.info(t.inv)
+                if command == b"inv":
+                    logger.info("[notice]:%s" % (t.inv))
 
                 # 接收到block数据
-                if command == b'block':
-                    logger.info(t.block)
-
-                logger.info("Received command:%s" % (command))
+                if command == b"block":
+                    logger.info("[notice]:%s" % (t.block))
 
                 #保存日志
                 self._log_message("receive", t)
@@ -252,14 +260,19 @@ class P2PConnection(asyncore.dispatcher):
             raise IOError('Not connected, no pushbuf')
         self._log_message("send", message)
         command = message.command
-
-        logger.info("send command:%s" % (command))
-
         data = message.serialize()
         tmsg = MAGIC_BYTES[self.network]
         tmsg += command
         tmsg += b"\x00" * (12 - len(command))
-        tmsg += struct.pack("<I", len(data))
+
+        datalen = len(data);
+
+        if command == b"headers":
+            logger.info("[notice] is headers:%s" % data)
+
+        logger.info("[notice] send command:%s len:%d" % (command , datalen))
+
+        tmsg += struct.pack("<I", datalen)
         th = sha256(data)
         h = sha256(th)
         tmsg += h[:4]
@@ -336,6 +349,10 @@ class P2PInterface(P2PConnection):
                 command = message.command.decode('ascii')
                 self.message_count[command] += 1
                 self.last_message[command] = message
+
+                if command == b"inv":
+                    debug = 1;
+
                 getattr(self, 'on_' + command)(message)
             except:
                 print("ERROR delivering %s (%s)" % (repr(message), sys.exc_info()[0]))
