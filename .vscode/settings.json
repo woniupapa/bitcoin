@@ -10,6 +10,20 @@
         "*.ipp": "cpp",
         "locale": "cpp",
         "istream": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "__config": "cpp",
+        "__nullptr": "cpp",
+        "exception": "cpp",
+        "initializer_list": "cpp",
+        "new": "cpp",
+        "stdexcept": "cpp",
+        "typeinfo": "cpp",
+        "algorithm": "cpp",
+        "slist": "cpp",
+        "type_traits": "cpp",
+        "cctype": "cpp",
+        "cstddef": "cpp",
+        "cstdlib": "cpp",
+        "cwctype": "cpp"
     }
 }
