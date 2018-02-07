@@ -61,6 +61,8 @@ void CChainParams::UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64
 
 /**
  * Main network
+ * 主要网络
+ * 
  */
 /**
  * What makes a good checkpoint block?
@@ -68,6 +70,7 @@ void CChainParams::UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64
  *   (no blocks before with a timestamp after, none after with
  *    timestamp before)
  * + Contains no strange transactions
+ * 
  */
 
 class CMainParams : public CChainParams {
@@ -344,6 +347,11 @@ public:
 
 static std::unique_ptr<CChainParams> globalChainParams;
 
+
+/**
+ * 获得主链参数
+ * 
+ * */
 const CChainParams &Params() {
     assert(globalChainParams);
     return *globalChainParams;
