@@ -3357,6 +3357,7 @@ UniValue generate(const JSONRPCRequest& request)
         max_tries = request.params[1].get_int();
     }
 
+    // coinbase_script
     std::shared_ptr<CReserveScript> coinbase_script;
     pwallet->GetScriptForMining(coinbase_script);
 
@@ -3370,6 +3371,7 @@ UniValue generate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available");
     }
 
+    //生成Blocks
     return generateBlocks(coinbase_script, num_generate, max_tries, true);
 }
 

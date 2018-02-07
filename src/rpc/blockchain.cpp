@@ -112,6 +112,13 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     return result;
 }
 
+/**
+ * 将区块转化成json结构
+ * @param block
+ * @param blockindex
+ * @param txDetails
+ * 
+ * */
 UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool txDetails)
 {
     AssertLockHeld(cs_main);
@@ -174,6 +181,10 @@ UniValue getblockcount(const JSONRPCRequest& request)
     return chainActive.Height();
 }
 
+/**
+ * 获得最新的深度block的hash
+ * 
+ * */
 UniValue getbestblockhash(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0)
@@ -787,6 +798,112 @@ UniValue getblock(const JSONRPCRequest& request)
 
     return blockToJSON(block, pblockindex, verbosity >= 2);
 }
+
+/**
+ * 通过block高度获得区块信息
+ * 
+ * */
+UniValue getblockfromheight(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "getblockfromheight height\n"
+            "\nReturns content of block in best-block-chain at height provided.\n"
+            "\nArguments:\n"
+            "1. height         (numeric, required) The height index\n"
+            "\nResult:\n"
+            "\"block\"         (string) The block\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getblockfromheight", "1000")
+            + HelpExampleRpc("getblockfromheight", "1000")
+        );
+
+    LOCK(cs_main);
+
+    int nHeight = request.params[0].get_int();
+    if (nHeight < 0 || nHeight > chainActive.Height())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+
+    int verbosity = 2; // 
+
+    CBlockIndex* pblockindex = chainActive[nHeight];
+    std::string strHash = pblockindex->GetBlockHash().GetHex();
+    uint256 hash(uint256S(strHash));
+
+    if (mapBlockIndex.count(hash) == 0)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+
+    CBlock block;
+    CBlockIndex* pblockindexFromHash = mapBlockIndex[hash];
+
+    if(pblockindexFromHash != pblockindex)
+        throw JSONRPCError(RPC_MISC_ERROR, "can not find the block (pruned data)");
+
+    if (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0)
+        throw JSONRPCError(RPC_MISC_ERROR, "Block not available (pruned data)");
+
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
+        // Block not found on disk. This could be because we have the block
+        // header in our index but don't have the block (for example if a
+        // non-whitelisted node sends us an unrequested long chain of valid
+        // blocks, we add the headers to our index, but don't accept the
+        // block).
+        throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
+
+    if (verbosity <= 0)
+    {
+        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        ssBlock << block;
+        std::string strHex = HexStr(ssBlock.begin(), ssBlock.end());
+        return strHex;
+    }
+
+    return blockToJSON(block, pblockindex, verbosity >= 2);
+}
+
+/**
+ * 通过startHeight 和 endHeight 获得block信息的array
+ * 
+ * */
+UniValue getblockfromstarttoend(const JSONRPCRequest& request){
+
+      if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+            "getblockfromstarttoend height\n"
+            "\nReturns content of block in best-block-chain at height provided.\n"
+            "\nArguments:\n"
+            "1. height         (numeric, required) The height index\n"
+            "1. height         (numeric, required) The height index\n"
+            "\nResult:\n"
+            "\"block\"         (string) The block\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getblockfromstarttoend", "1000")
+            + HelpExampleRpc("getblockfromstarttoend", "1000")
+        );
+
+    LOCK(cs_main);
+
+    int nStartHeight = request.params[0].get_int();
+    if (nStartHeight < 0 || nStartHeight > chainActive.Height())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block start height out of range");
+
+    int nEndHeight = request.params[1].get_int();
+    if (nEndHeight < 0 || nEndHeight > chainActive.Height())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block end height out of range");
+
+    if (nEndHeight < nStartHeight)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block end height is bigger than start height");
+
+    UniValue obj(UniValue::VOBJ);
+
+    int endIndex = nEndHeight;
+    for (int startIndex = nStartHeight; startIndex < endIndex; ++startIndex){
+           CBlockIndex* pblockindex = chainActive[nStartHeight];
+           pblockindex->GetBlockHash().GetHex();       
+    }
+    return obj;
+}
+
 
 struct CCoinsStats
 {
@@ -1628,6 +1745,12 @@ static const CRPCCommand commands[] =
     { "hidden",             "waitfornewblock",        &waitfornewblock,        {"timeout"} },
     { "hidden",             "waitforblock",           &waitforblock,           {"blockhash","timeout"} },
     { "hidden",             "waitforblockheight",     &waitforblockheight,     {"height","timeout"} },
+    
+    /*new 通过高度获得block*/
+    { "hidden",             "getblockfromheight",     &getblockfromheight,     {"height"} },
+
+    /*new 通过高度范围获得block数组*/
+    { "hidden",             "getblockfromstarttoend", &getblockfromstarttoend,     {"startheight","endheight"} },
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &t)

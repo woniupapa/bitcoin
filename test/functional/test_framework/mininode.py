@@ -192,6 +192,17 @@ class P2PConnection(asyncore.dispatcher):
                 if command == b'addr':
                     testAddr = 0
 
+                # 收到inv协议,获取inv的hash
+                # 会发送getdata,带上hash数据,self.nodes[0]会发送新的block数据过来
+                if command == b'inv':
+                    logger.info(t.inv)
+
+                # 接收到block数据
+                if command == b'block':
+                    logger.info(t.block)
+
+                logger.info("Received command:%s" % (command))
+
                 #保存日志
                 self._log_message("receive", t)
 
@@ -241,6 +252,9 @@ class P2PConnection(asyncore.dispatcher):
             raise IOError('Not connected, no pushbuf')
         self._log_message("send", message)
         command = message.command
+
+        logger.info("send command:%s" % (command))
+
         data = message.serialize()
         tmsg = MAGIC_BYTES[self.network]
         tmsg += command
@@ -354,6 +368,7 @@ class P2PInterface(P2PConnection):
     def on_sendheaders(self, message): pass
     def on_tx(self, message): pass
 
+    # 调用inv获取数据
     def on_inv(self, message):
         want = msg_getdata()
         for i in message.inv:

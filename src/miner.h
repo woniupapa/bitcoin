@@ -120,6 +120,7 @@ struct update_for_parent_inclusion
 };
 
 /** Generate a new block, without valid proof-of-work */
+// 生成区块，不用验证proof-of-work
 class BlockAssembler
 {
 private:

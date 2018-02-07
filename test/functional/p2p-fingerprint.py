@@ -50,23 +50,27 @@ class P2PFingerprintTest(BitcoinTestFramework):
         return blocks
 
     # Send a getdata request for a given block hash
+    # 通过getdata给某个hash的单个区块
     def send_block_request(self, block_hash, node):
         msg = msg_getdata()
         msg.inv.append(CInv(2, block_hash))  # 2 == "Block"
         node.send_message(msg)
 
     # Send a getheaders request for a given single block hash
+    # 发送getheaders给某个hash的单个区块
     def send_header_request(self, block_hash, node):
         msg = msg_getheaders()
         msg.hashstop = block_hash
         node.send_message(msg)
 
     # Check whether last block received from node has a given hash
+    # 检测是否从node接收到上个区块的hash是否相等
     def last_block_equals(self, expected_hash, node):
         block_msg = node.last_message.get("block")
         return block_msg and block_msg.block.rehash() == expected_hash
 
     # Check whether last block header received from node has a given hash
+    # 检测是否上个区块头是否等于hash
     def last_header_equals(self, expected_hash, node):
         headers_msg = node.last_message.get("headers")
         return (headers_msg and
@@ -103,24 +107,42 @@ class P2PFingerprintTest(BitcoinTestFramework):
         node0.wait_for_verack()
 
         # Set node time to 60 days ago
-        self.nodes[0].setmocktime(int(time.time()) - 60 * 24 * 60 * 60)
+        # 将时间调整到2个月之前
+        mocktime = int(time.time()) - 60 * 24 * 60 * 60
+        self.nodes[0].setmocktime(mocktime)
 
         # Generating a chain of 10 blocks
         #生成10个区块链
         block_hashes = self.nodes[0].generate(nblocks=10)
 
-        for i in range(0, len(block_hashes)):
-            message = '[%s]:%s' % (i, block_hashes[i])
-            self.log.info(message)
+        #for hash in block_hashes:
+        #    self.log.info(' Node: [%d]:%s' % (i, hash))
 
+        #for i in range(block_hashes):
+        #    self.log.info(' Node: [%d]:%s' % (i, block_hashes[i]))
 
+        for i, hash in enumerate(block_hashes):
+            self.log.info('[%d]:%s' % (i, hash))
+            #self.log.info('%d:%s'% (i,int(hash, 16)))
+
+        self.log.info('generate node %d' % len(block_hashes))
+        # 
+        
         # Create longer chain starting 2 blocks before current tip
         height = len(block_hashes) - 2
         block_hash = block_hashes[height - 1]
+
+        # median time 中位时间
         block_time = self.nodes[0].getblockheader(block_hash)["mediantime"] + 1
+        
         new_blocks = self.build_chain(5, block_hash, height, block_time)
 
+        for i, hash in enumerate(new_blocks):
+            self.log.info('n [%d]:%s' % (i, hash.hash))
+            #self.log.info('%d'% (int(hash.hash, 16)))
+
         # Force reorg to a longer chain
+        # 向self.nodes[0]实际节点发送headers消息告诉它最新的节点数据
         node0.send_message(msg_headers(new_blocks))
         node0.wait_for_getdata()
         for block in new_blocks:
@@ -129,6 +151,7 @@ class P2PFingerprintTest(BitcoinTestFramework):
         # Check that reorg succeeded
         assert_equal(self.nodes[0].getblockcount(), 13)
 
+        #取出block_hashes里面最后一条hash数据并且将它转化成16进制
         stale_hash = int(block_hashes[-1], 16)
 
         # Check that getdata request for stale block succeeds
