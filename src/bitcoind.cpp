@@ -109,6 +109,7 @@ bool AppInit(int argc, char* argv[])
             return false;
         }
         // Check for -testnet or -regtest parameter (Params() calls are only valid after this clause)
+        // 检测是否带上testnet或者regnet参数
         try {
             SelectParams(ChainNameFromCommandLine());
         } catch (const std::exception& e) {

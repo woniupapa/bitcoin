@@ -25,6 +25,11 @@ static int64_t nTimeOffset = 0;
  *  - System clock
  *  - Median of other nodes clocks
  *  - The user (asking the user to fix the system clock if the first two disagree)
+ * 三个时间源
+ *  1.系统时钟 local
+ *  2.其他节点的时钟的Median
+ *  3.用户时间
+ * 
  */
 int64_t GetTimeOffset()
 {
