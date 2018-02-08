@@ -138,6 +138,8 @@ class P2PFingerprintTest(BitcoinTestFramework):
         height = len(block_hashes) - 2
         block_hash = block_hashes[height - 1]
 
+        self.log.info('[notice] starting %d:%s' % (height , block_hash))
+
         # median time 中位时间
         block_time = self.nodes[0].getblockheader(block_hash)["mediantime"] + 1
         

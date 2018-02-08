@@ -1352,6 +1352,9 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
 
     CValidationState state;
     CBlockHeader first_invalid_header;
+
+    LogPrintf("[notice] ProcessNewBlockHeaders before height:%d\n",pindexLast->nHeight);
+
     // 判断下是否是处理新的区块头
     if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, &first_invalid_header)) {
         int nDoS;
@@ -1456,7 +1459,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
             } else {
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
-                LogPrintf("[notice] Download as much as possible, from earliest to latest.");
+                LogPrintf("[notice] Download as much as possible, from earliest to latest.\n");
                 for (const CBlockIndex *pindex : reverse_iterate(vToFetch)) {
                     if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                         // Can't download any more from this peer
@@ -2631,7 +2634,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         // 获得Header里面包含多少个其他node header的hash，注意下最多2000个block的header
         unsigned int nCount = ReadCompactSize(vRecv);
 
-        LogPrintf("[notice] get headers command count:%d", nCount);
+        LogPrintf("[notice] get headers command count:%d\n", nCount);
         if (nCount > MAX_HEADERS_RESULTS) {
             LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 20);

@@ -205,11 +205,11 @@ class P2PConnection(asyncore.dispatcher):
                 # 收到inv协议,获取inv的hash
                 # 会发送getdata,带上hash数据,self.nodes[0]会发送新的block数据过来
                 if command == b"inv":
-                    logger.info("[notice]:%s" % (t.inv))
+                    logger.info("[notice]: received %s" % (t.inv))
 
                 # 接收到block数据
                 if command == b"block":
-                    logger.info("[notice]:%s" % (t.block))
+                    logger.info("[notice]: received %s" % (t.block))
 
                 #保存日志
                 self._log_message("receive", t)
@@ -267,10 +267,16 @@ class P2PConnection(asyncore.dispatcher):
 
         datalen = len(data);
 
-        if command == b"headers":
-            logger.info("[notice] is headers:%s" % message)
-
         logger.info("[notice] send command:%s len:%d" % (command , datalen))
+
+        if command == b"headers":
+            #注意这里用迭代器可以获取两个数值
+            for i, item in enumerate(message.headers):
+                logger.info("[notice] send %d:%s" % (i, item))
+
+        if command == b"block":
+            debug = 1
+                
 
         tmsg += struct.pack("<I", datalen)
         th = sha256(data)
