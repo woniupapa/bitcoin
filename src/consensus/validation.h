@@ -22,7 +22,11 @@ static const unsigned char REJECT_NONSTANDARD = 0x40;
 static const unsigned char REJECT_INSUFFICIENTFEE = 0x42;
 static const unsigned char REJECT_CHECKPOINT = 0x43;
 
-/** Capture information about block/transaction validation */
+/** 
+ * Capture information about block/transaction validation 
+ * 捕获信息关于区块和交易的验证
+ * 
+ * */
 class CValidationState {
 private:
     enum mode_state {

@@ -1352,9 +1352,6 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
 
     CValidationState state;
     CBlockHeader first_invalid_header;
-
-    LogPrintf("[notice] ProcessNewBlockHeaders before height:%d\n",pindexLast->nHeight);
-
     // 判断下是否是处理新的区块头
     if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, &first_invalid_header)) {
         int nDoS;

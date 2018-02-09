@@ -607,6 +607,10 @@ void CTxMemPool::clear()
     _clear();
 }
 
+/**
+ * 检测输入和更新Coin
+ * 
+ * */
 static void CheckInputsAndUpdateCoins(const CTransaction& tx, CCoinsViewCache& mempoolDuplicate, const int64_t spendheight)
 {
     CValidationState state;
