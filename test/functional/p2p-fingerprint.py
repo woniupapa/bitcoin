@@ -127,7 +127,7 @@ class P2PFingerprintTest(BitcoinTestFramework):
             self.log.info('[notice] [%d]:%s' % (i, hash))
             #self.log.info('%d:%s'% (i,int(hash, 16)))
 
-        self.log.info('notice] generate node %d' % len(block_hashes))
+        self.log.info('[notice] generate node %d' % len(block_hashes))
         
 
         # 在regnet情况下创世块的hash是0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206
