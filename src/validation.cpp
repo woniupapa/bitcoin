@@ -996,6 +996,11 @@ static bool AcceptToMemoryPoolWithTime(const CChainParams& chainparams, CTxMemPo
     return res;
 }
 
+
+/**
+ * 接受到内存池，这个是交易池？还是临时交易池
+ * 
+ * */
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransactionRef &tx,
                         bool* pfMissingInputs, std::list<CTransactionRef>* plTxnReplaced,
                         bool bypass_limits, const CAmount nAbsurdFee)
@@ -1132,6 +1137,10 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
+/**
+ * 获得奖励
+ * 
+ * */
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
@@ -1292,6 +1301,7 @@ void CChainState::InvalidBlockFound(CBlockIndex *pindex, const CValidationState 
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, CTxUndo &txundo, int nHeight)
 {
     // mark inputs spent
+    // 标记输入花费
     if (!tx.IsCoinBase()) {
         txundo.vprevout.reserve(tx.vin.size());
         for (const CTxIn &txin : tx.vin) {
@@ -1301,6 +1311,7 @@ void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, CTxUndo &txund
         }
     }
     // add outputs
+    // 添加花费到输出
     AddCoins(inputs, tx, nHeight);
 }
 
@@ -3053,6 +3064,17 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
+
+/**
+ * 检测区块头
+ * @param block
+ * @param state
+ * @param consensusParams
+ * @param fCheckPOW
+ * 
+ * @return
+ * 
+ * */
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
@@ -3062,6 +3084,17 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     return true;
 }
 
+/**
+ * 检测区块
+ * @param block
+ * @param state
+ * @param consensusParams
+ * @param fCheckPOW
+ * @param fCheckMerkleRoot
+ * 
+ * @return
+ * 
+ * */
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
@@ -3341,12 +3374,17 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
 bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex)
 {
     AssertLockHeld(cs_main);
+
     // Check for duplicate
+    // 检测是否重复
     uint256 hash = block.GetHash();
     BlockMap::iterator miSelf = mapBlockIndex.find(hash);
     CBlockIndex *pindex = nullptr;
+
+    // 判断不是创世块
     if (hash != chainparams.GetConsensus().hashGenesisBlock) {
 
+        //区块是否已知
         if (miSelf != mapBlockIndex.end()) {
             // Block header is already known.
             pindex = miSelf->second;
@@ -3357,6 +3395,7 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
             return true;
         }
 
+        //检测区块头
         if (!CheckBlockHeader(block, state, chainparams.GetConsensus()))
             return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
@@ -3404,6 +3443,18 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
  **/
 bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex, CBlockHeader *first_invalid)
 {
+
+    //////////////////////////////////////////////////////////
+    //
+    if (*ppindex != nullptr){
+        LogPrintf("[notice] ProcessNewBlockHeaders before height:%d\n",(*ppindex)->nHeight);
+    }
+    else{
+        LogPrintf("[notice] ProcessNewBlockHeaders ppindex is nullptr\n");
+    }
+    /////////////////////////////////////////////////////////
+
+
     if (first_invalid != nullptr) first_invalid->SetNull();
     {
         LOCK(cs_main);
@@ -3417,6 +3468,8 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
                 *ppindex = pindex;
             }
         }
+
+        LogPrintf("[notice] ProcessNewBlockHeaders before height:%d\n",(*ppindex)->nHeight);
     }
     NotifyHeaderTip();
     return true;
@@ -3535,10 +3588,13 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 /**
  * 处理新区块
  * @param chainparams
- * @param pblock
+ * @param pblock      从网络端接受的block
  * @param fNewBlock
  * 
  * @return
+ * 
+ * 1.从网络端接受的区块,如何验证区块有效性。
+ * 2.如何添加到ActiveChain里面
  * 
  * */
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
