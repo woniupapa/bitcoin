@@ -1406,7 +1406,10 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                 pcoinsTip.reset();
                 pcoinsdbview.reset();
                 pcoinscatcher.reset();
+
+                uiInterface.InitMessage(_("init CBlockTreeDB+++ ..."));
                 pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, false, fReset));
+                uiInterface.InitMessage(_("init CBlockTreeDB--- ..."));
 
                 if (fReset) {
                     pblocktree->WriteReindexing(true);

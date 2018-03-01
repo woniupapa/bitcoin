@@ -109,6 +109,8 @@ CDBWrapper::CDBWrapper(const fs::path& path, size_t nCacheSize, bool fMemory, bo
         TryCreateDirectories(path);
         LogPrintf("Opening LevelDB in %s\n", path.string());
     }
+
+    // 打开leveldb数据库,获取状态
     leveldb::Status status = leveldb::DB::Open(options, path.string(), &pdb);
     dbwrapper_private::HandleError(status);
     LogPrintf("Opened LevelDB successfully\n");
@@ -120,6 +122,7 @@ CDBWrapper::CDBWrapper(const fs::path& path, size_t nCacheSize, bool fMemory, bo
     }
 
     // The base-case obfuscation key, which is a noop.
+    // 
     obfuscate_key = std::vector<unsigned char>(OBFUSCATE_KEY_NUM_BYTES, '\000');
 
     bool key_exists = Read(OBFUSCATE_KEY_KEY, obfuscate_key);

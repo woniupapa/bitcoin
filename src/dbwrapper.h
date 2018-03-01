@@ -173,6 +173,11 @@ public:
 
 };
 
+
+/**
+ * 包裹DB
+ * 
+ * */
 class CDBWrapper
 {
     friend const std::vector<unsigned char>& dbwrapper_private::GetObfuscateKey(const CDBWrapper &w);

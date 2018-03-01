@@ -76,7 +76,7 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 }
 
 /**
- * 检测Proof Of Work
+ * 检测Proof Of Work(POW)
  * 
  * */
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)

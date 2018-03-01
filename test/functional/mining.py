@@ -34,8 +34,12 @@ class MiningTest(BitcoinTestFramework):
     def run_test(self):
         node = self.nodes[0]
 
-        self.log.info('getmininginfo')
+        #为什么getmininginfo信息里面mining_info['blocks']为两百
         mining_info = node.getmininginfo()
+
+        self.log.info('getmininginfo')
+
+        #为什么这个区块数是200
         assert_equal(mining_info['blocks'], 200)
         assert_equal(mining_info['chain'], 'regtest')
         assert_equal(mining_info['currentblocktx'], 0)
@@ -45,12 +49,14 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(mining_info['pooledtx'], 0)
 
         # Mine a block to leave initial block download
+        # 挖一个区块并且离开初始化下载?
         node.generate(1)
         tmpl = node.getblocktemplate()
         self.log.info("getblocktemplate: Test capability advertised")
         assert 'proposal' in tmpl['capabilities']
         assert 'coinbasetxn' not in tmpl
 
+        # 
         coinbase_tx = create_coinbase(height=int(tmpl["height"]) + 1)
         # sequence numbers must not be max for nLockTime to have effect
         coinbase_tx.vin[0].nSequence = 2 ** 32 - 2

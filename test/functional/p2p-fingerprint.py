@@ -35,6 +35,7 @@ class P2PFingerprintTest(BitcoinTestFramework):
         self.num_nodes = 1
 
     # Build a chain of blocks on top of given one
+    # 构造区块链通过顶层
     def build_chain(self, nblocks, prev_hash, prev_height, prev_median_time):
         blocks = []
         for _ in range(nblocks):
@@ -110,8 +111,8 @@ class P2PFingerprintTest(BitcoinTestFramework):
         mocktime = int(time.time()) - 60 * 24 * 60 * 60
         self.nodes[0].setmocktime(mocktime)
 
-        #nblocks=10
-        nblocks = 5
+        nblocks=10
+        #nblocks = 5
 
         # Generating a chain of 10 blocks
         #生成10个区块链
@@ -164,6 +165,8 @@ class P2PFingerprintTest(BitcoinTestFramework):
 
         #取出block_hashes里面最后一条hash数据并且将它转化成16进制
         stale_hash = int(block_hashes[-1], 16)
+
+        self.log.info('[notice] stale_hash:%s' % stale_hash)
 
         # Check that getdata request for stale block succeeds
         # 检测getdata请求发送陈旧的块的hash给self.nodes[0]
