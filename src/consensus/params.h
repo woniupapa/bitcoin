@@ -49,6 +49,11 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+
+    /** Needs to evenly divide MAX_SUBSIDY to avoid rounding errors. */      
+    // add by glennxu 20180227                                       
+    int nSubsidySlowStartInterval;
+
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
     /** Block height and hash at which BIP34 becomes active */

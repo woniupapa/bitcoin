@@ -1137,10 +1137,60 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     return true;
 }
 
+// modified at December 30, 2017, time 8:52:43, block height 501656(1514623963)
+// total coins calculated to January 1, 2018, 00:00:00(1514764800)
+// estimate to height 501888 at rate of 10 min per block
+// so at the time of new year, we assume the subsidy dispatched
+// be (2.1 * 10 ^ 5 - 1) * 50 * 10 ^ 3 + 2.1 * 10 ^ 5 * 25 * 10 ^ 3 + 81888 * 12.5 * 10 ^ 3,
+// which is 16773550000.
+
+const CAmount premine(16773550000 * COIN);
+
+CAmount GetBlockSubsidy(int nHeight, const Consensus::Params &consensusParams) {
+	CAmount nSubsidy = 50 * COIN * 1000;
+	if (nHeight == 0)
+	{
+		return 50 * COIN;
+	}
+
+	// send 1000 times BTCs at the precalculated height of 501888 for premine
+	if (nHeight == 1)
+	{
+		return premine - 1;
+	}
+
+    // Mining slow start
+	const int val = consensusParams.nSubsidySlowStartInterval;
+	if (nHeight < val)
+	{
+		if (nHeight > 1000)
+		{
+			nSubsidy >>= 2;
+		}
+
+		// for compliance of previously generated block.
+		nSubsidy /= val;
+		if (nHeight < val / 2) nSubsidy *= nHeight;
+		else nSubsidy *= (nHeight + 1);
+		return nSubsidy;
+	}
+
+	int halvings = (nHeight + 501888) / consensusParams.nSubsidyHalvingInterval;
+	// Force block reward to zero when right shift is undefined.
+	if (halvings >= 64) return 0;
+
+    // Subsidy is cut in half every 210,000 blocks which will occur
+    // approximately every 4 years.
+    nSubsidy >>= halvings;
+    return nSubsidy;
+}
+
+
 /**
- * 获得奖励
+ * 获得区块分叉数量?
  * 
  * */
+/**
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
@@ -1153,6 +1203,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     nSubsidy >>= halvings;
     return nSubsidy;
 }
+**/
 
 bool IsInitialBlockDownload()
 {
@@ -3863,7 +3914,7 @@ CBlockIndex * CChainState::InsertBlockIndex(const uint256& hash)
     if (hash.IsNull())
         return nullptr;
 
-    LogPrintf("[notice] InsertBlockIndex:%s", hash.ToString());
+    LogPrintf("[notice] InsertBlockIndex:%s \n", hash.ToString());
 
     // Return existing
     BlockMap::iterator mi = mapBlockIndex.find(hash);
@@ -3880,12 +3931,18 @@ CBlockIndex * CChainState::InsertBlockIndex(const uint256& hash)
 
 bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlockTreeDB& blocktree)
 {
-    if (!blocktree.LoadBlockIndexGuts(consensus_params, [this](const uint256& hash){ return this->InsertBlockIndex(hash); }))
+    LogPrintf("[notice] %s+++++ \n",__func__);
+    if (!blocktree.LoadBlockIndexGuts(consensus_params, [this](const uint256& hash){ 
+        return this->InsertBlockIndex(hash); 
+        }))
         return false;
+
+    LogPrintf("[notice] %s+++++ LoadBlockIndexGuts ok \n",__func__);
 
     boost::this_thread::interruption_point();
 
     // Calculate nChainWork
+    // 计算链的工作
     std::vector<std::pair<int, CBlockIndex*> > vSortedByHeight;
     vSortedByHeight.reserve(mapBlockIndex.size());
     for (const std::pair<uint256, CBlockIndex*>& item : mapBlockIndex)
@@ -4026,6 +4083,16 @@ CVerifyDB::~CVerifyDB()
     uiInterface.ShowProgress("", 100, false);
 }
 
+/**
+ * 验证DB
+ * @param chainparams
+ * @param coinsview
+ * @param nCheckLevel
+ * @param nCheckDepth
+ * 
+ * @return
+ * 
+ * */
 bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview, int nCheckLevel, int nCheckDepth)
 {
     LOCK(cs_main);
