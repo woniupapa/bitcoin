@@ -31,8 +31,13 @@ import subprocess
 
 class P2PFingerprintTest(BitcoinTestFramework):
     def set_test_params(self):
-        self.setup_clean_chain = True
-        self.num_nodes = 1
+         self.setup_clean_chain = True
+         self.num_nodes = 1
+
+        # 不建立清理区块链??     
+        # setup_clean_chain表示从test/cache目录下复制区块模版文件到临时目录
+        #self.num_nodes = 1
+        #self.setup_clean_chain = False
 
     # Build a chain of blocks on top of given one
     # 构造区块链通过顶层
@@ -83,6 +88,20 @@ class P2PFingerprintTest(BitcoinTestFramework):
     # This does not currently test that stale blocks timestamped within the
     # last month but that have over a month's worth of work are also withheld.
     def run_test(self):
+
+
+#        node = self.nodes[0]
+#        mining_info = node.getmininginfo()
+#        self.log.info('getmininginfo')
+
+        #为什么这个区块数是200
+#        assert_equal(mining_info['blocks'], 200)
+#        assert_equal(mining_info['chain'], 'regtest')
+#        assert_equal(mining_info['currentblocktx'], 0)
+#        assert_equal(mining_info['currentblockweight'], 0)
+#        assert_equal(mining_info['difficulty'], Decimal('4.656542373906925E-10'))
+#        assert_equal(mining_info['networkhashps'], Decimal('0.003333333333333334'))
+#        assert_equal(mining_info['pooledtx'], 0)
         
         #logfilePath = self.options.tmpdir + '/test_framework.log'
 

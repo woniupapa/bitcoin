@@ -187,8 +187,10 @@ class BitcoinTestFramework():
         """Override this method to customize blockchain setup"""
         self.log.info("Initializing test directory " + self.options.tmpdir)
         if self.setup_clean_chain:
+            #初始化区块链清理
             self._initialize_chain_clean()
         else:
+            #初始化区块链
             self._initialize_chain()
 
     def setup_network(self):
@@ -434,6 +436,7 @@ class BitcoinTestFramework():
                 os.remove(log_filename(self.options.cachedir, i, "peers.dat"))
                 os.remove(log_filename(self.options.cachedir, i, "fee_estimates.dat"))
 
+        # 新建立需要的节点数量
         for i in range(self.num_nodes):
             from_dir = os.path.join(self.options.cachedir, "node" + str(i))
             to_dir = os.path.join(self.options.tmpdir, "node" + str(i))

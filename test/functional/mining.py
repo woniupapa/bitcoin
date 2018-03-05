@@ -41,6 +41,8 @@ class MiningTest(BitcoinTestFramework):
 
         #为什么这个区块数是200
         assert_equal(mining_info['blocks'], 200)
+
+        #
         assert_equal(mining_info['chain'], 'regtest')
         assert_equal(mining_info['currentblocktx'], 0)
         assert_equal(mining_info['currentblockweight'], 0)
