@@ -3863,7 +3863,7 @@ CBlockIndex * CChainState::InsertBlockIndex(const uint256& hash)
     if (hash.IsNull())
         return nullptr;
 
-    LogPrintf("[notice] InsertBlockIndex:%s", hash.ToString());
+    LogPrintf("[notice] InsertBlockIndex:%s \n", hash.ToString());
 
     // Return existing
     BlockMap::iterator mi = mapBlockIndex.find(hash);
